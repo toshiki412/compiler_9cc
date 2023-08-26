@@ -100,7 +100,9 @@ bool at_eof(){
 
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str) {
+    //新しいToken構造体のメモリ(RAM)を動的に割り当てる。Token構造体のバイトサイズ×1のバイト数を確保。
     Token *tok = static_cast<Token*>(calloc(1, sizeof(Token)));
+
     tok->kind = kind;
     tok->str = str;
     cur->next = tok;
@@ -162,38 +164,16 @@ Token *tokenize() {
 Node *expr();  // expr 関数のプロトタイプ
 Node *mul();   // mul 関数のプロトタイプ
 Node *primary();  // primary 関数のプロトタイプ
+Node *unary();  // unary 関数のプロトタイプ
 
-Node *primary() {
-    // primary = num | "(" expr ")"
+// BNF
+// expr    = mul ("+" mul | "-" mul)*
+// mul     = unary ("*" unary | "/" unary)*
+// unary   = ("+" | "-")? primary
+// primary = num | "(" expr ")"
 
-    // 次のトークンが"("なら、"(" expr ")"のはず
-    if (consume('(')) {
-        Node *node = expr();
-        expect(')');
-        return node;
-    }
-
-    // そうでなければ数値のはず
-    return new_node_num(expect_number());
-}
-
-Node *mul() {
-    // mul     = primary ("*" primary | "/" primary)*
-
-    Node *node = primary();
-    for (;;) {
-        if (consume('*')){
-            node = new_node(ND_MUL, node, primary());
-        }else if (consume('/')){
-            node = new_node(ND_DIV, node, primary());
-        }else{
-            return node;
-        }
-    }
-}
 
 Node *expr(){
-    // expr    = mul ("+" mul | "-" mul)*
 
     Node *node = mul();
     for(;;){
@@ -205,6 +185,42 @@ Node *expr(){
             return node;
         }
     }
+}
+
+Node *mul() {
+
+    Node *node = unary();
+    for (;;) {
+        if (consume('*')){
+            node = new_node(ND_MUL, node, unary());
+        }else if (consume('/')){
+            node = new_node(ND_DIV, node, unary());
+        }else{
+            return node;
+        }
+    }
+}
+
+Node *unary(){
+    if(consume('+')){
+        return primary(); //+の場合は無視するということ
+    }
+    if(consume('-')){
+        return new_node(ND_SUB, new_node_num(0), primary());
+    }
+    return primary();
+}
+
+Node *primary() {
+    // 次のトークンが"("なら、"(" expr ")"のはず
+    if (consume('(')) {
+        Node *node = expr();
+        expect(')');
+        return node;
+    }
+
+    // そうでなければ数値のはず
+    return new_node_num(expect_number());
 }
 
 //スタックマシン
