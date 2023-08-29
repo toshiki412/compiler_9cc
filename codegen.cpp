@@ -19,26 +19,32 @@ Node *new_node_num(int val){
     return node;
 }
 
-// 関数のプロトタイプ
-Node *expr();  
-Node *equality();  
-Node *relational();  
-Node *add(); 
-Node *mul();  
-Node *primary(); 
-Node *unary(); 
+Node *code[100];
 
-// BNF
-// expr       = equality
-// equality   = relational ("==" relational | "!=" relational)*
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-// add        = mul ("+" mul | "-" mul)*
-// mul        = unary ("*" unary | "/" unary)*
-// unary      = ("+" | "-")? primary
-// primary    = num | "(" expr ")"
+void program(){
+    int i = 0;
+    while(!at_eof){
+        code[i++] = stmt();
+    }
+    code[i] = NULL;
+}
+
+Node *stmt(){
+    Node *node = expr();
+    expect(";");
+    return node;
+}
 
 Node *expr(){
-    return equality();
+    return assign();
+}
+
+Node *assign(){
+    Node *node = equality();
+    if(consume("=")){
+        node = new_binary(ND_ASSIGN, node, assign());
+    }
+    return node;
 }
 
 Node *equality(){
@@ -112,6 +118,14 @@ Node *primary() {
     if (consume("(")) {
         Node *node = expr();
         expect(")");
+        return node;
+    }
+
+    Token *tok = consume_ident();
+    if(tok){
+        Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_LVAR;
+        node->offset = (tok->str[0] - 'a' + 1) * 8;
         return node;
     }
 
