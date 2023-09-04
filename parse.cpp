@@ -23,6 +23,15 @@ void error_at(char *loc, char *fmt, ...){
     //printfの出力先は標準出力、fprintfの出力先は指定したファイルストリーム、vfprintfは可変引数を与えている
 }
 
+void error(char *fmt, ...){
+    va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
+    va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
+
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
 //次のトークンが期待している記号のときはトークンを一つ進めて真を返す
 //それ以外は偽を返す
 bool consume(char *op){
@@ -33,6 +42,15 @@ bool consume(char *op){
     }
     token = token->next;
     return true;
+}
+
+Token* consume_ident(){
+    if(token->kind != TK_IDENT){
+        return NULL;
+    }
+    Token* tok = token;
+    token = token->next;
+    return tok;
 }
 
 //次のトークンが期待している記号のときはトークンを一つ進める
@@ -102,8 +120,13 @@ Token *tokenize() {
                 continue;
         }
 
-        if (strchr("+-*/()<>", *p)) {
+        if (strchr("+-*/()<>=;", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
+            continue;
+        }
+
+        if ('a' <= *p && *p <= 'z'){
+            cur = new_token(TK_IDENT, cur, p++, 1);
             continue;
         }
 
