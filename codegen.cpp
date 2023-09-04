@@ -23,7 +23,7 @@ Node *code[100];
 
 void program(){
     int i = 0;
-    while(!at_eof){
+    while(!at_eof()){
         code[i++] = stmt();
     }
     code[i] = NULL;

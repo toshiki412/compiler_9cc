@@ -36,18 +36,18 @@ extern Token *token;
 // “ü—ÍƒvƒƒOƒ‰ƒ€
 extern char *user_input;
 
-void error_at(char *loc, char *fmt, ...);
-void error(char *fmt, ...);
+void error_at(char *loc, const char *fmt, ...);
+void error(const char *fmt, ...);
 
-bool consume(char *op);
+bool consume(const char *op);
 Token* consume_ident();
 
-void expect(char *op);
+void expect(const char *op);
 
 int expect_number();
 
 bool at_eof();
-bool startswith(char *p, char *q);
+bool startswith(char *p, const char *q);
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) ;
 

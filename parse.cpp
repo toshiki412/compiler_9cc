@@ -8,7 +8,7 @@ char *user_input;
 
 //エラーを報告するための関数
 //locはエラーが発生した位置
-void error_at(char *loc, char *fmt, ...){
+void error_at(char *loc, const char *fmt, ...){
     va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
     va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
 
@@ -23,7 +23,7 @@ void error_at(char *loc, char *fmt, ...){
     //printfの出力先は標準出力、fprintfの出力先は指定したファイルストリーム、vfprintfは可変引数を与えている
 }
 
-void error(char *fmt, ...){
+void error(const char *fmt, ...){
     va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
     va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
 
@@ -34,7 +34,7 @@ void error(char *fmt, ...){
 
 //次のトークンが期待している記号のときはトークンを一つ進めて真を返す
 //それ以外は偽を返す
-bool consume(char *op){
+bool consume(const char *op){
     if( token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
         memcmp(token->str, op, token->len)){
@@ -55,7 +55,7 @@ Token* consume_ident(){
 
 //次のトークンが期待している記号のときはトークンを一つ進める
 //それ以外はエラーを報告する
-void expect(char *op){
+void expect(const char *op){
     if( token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
         memcmp(token->str, op, token->len)){
@@ -79,7 +79,7 @@ bool at_eof(){
     return token->kind == TK_EOF;
 }
 
-bool startswith(char *p, char *q){
+bool startswith(char *p, const char *q){
     return memcmp(p, q, strlen(q)) == 0;
 }
 
