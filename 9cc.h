@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,8 +37,10 @@ extern Token *token;
 extern char *user_input;
 
 void error_at(char *loc, char *fmt, ...);
+void error(char *fmt, ...);
 
 bool consume(char *op);
+Token* consume_ident();
 
 void expect(char *op);
 
@@ -83,6 +84,8 @@ struct Node{
     int offset; //kindがND_LVARのとき使う
 };
 
+extern Node *code[];
+
 Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
@@ -99,6 +102,7 @@ Node *new_node_num(int val);
 // unary      = ("+" | "-")? primary
 // primary    = num | ident | "(" expr ")"
 
+void program();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -109,5 +113,5 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-//スタックマシン
+void gen_lval(Node *node);
 void gen(Node *node);
