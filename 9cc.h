@@ -15,6 +15,7 @@ typedef enum{
 TK_RESERVED,    //記号
 TK_IDENT,       //識別子
 TK_NUM,         //整数トークン
+TK_RETURN,      //return
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
@@ -30,17 +31,29 @@ struct Token{
     int len;        //トークンの長さ
 };
 
+typedef struct LVar Lvar;
+
+struct LVar{
+    Lvar *next;
+    char *name;
+    int len;
+    int offset;
+};
+
 //現在着目しているトークン
 extern Token *token;
 
 // 入力プログラム
 extern char *user_input;
 
+extern LVar *locals;
+
 void error_at(char *loc, const char *fmt, ...);
 void error(const char *fmt, ...);
 
 bool consume(const char *op);
 Token* consume_ident();
+Token* consume_return();
 
 void expect(const char *op);
 
@@ -48,6 +61,8 @@ int expect_number();
 
 bool at_eof();
 bool startswith(char *p, const char *q);
+
+LVar *find_lvar(Token *tok);
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) ;
 
@@ -69,6 +84,7 @@ typedef enum{
     ND_ASSIGN,  // =
     ND_LVAR, // ローカル変数
     ND_NUM, // 整数
+    ND_RETURN, // return
 } NodeKind;
 
 
@@ -93,6 +109,7 @@ Node *new_node_num(int val);
 // BNF
 // program    = stmt*
 // stmt       = expr ";"
+//              | return expr ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*

@@ -6,7 +6,7 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    // ex) argv[1] : 12 + 31 - 15
+    // locals = NULL;
 
     // トークナイズしてパースする
     user_input = argv[1];

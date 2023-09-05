@@ -6,6 +6,9 @@ Token *token;
 // 入力プログラム
 char *user_input;
 
+//ローカル変数
+Lvar *locals;
+
 //エラーを報告するための関数
 //locはエラーが発生した位置
 void error_at(char *loc, const char *fmt, ...){
@@ -53,6 +56,16 @@ Token* consume_ident(){
     return tok;
 }
 
+
+Token* consume_return(){
+    if(token->kind != TK_RETURN){
+        return NULL;
+    }
+    Token* tok = token;
+    token = token->next;
+    return tok;
+}
+
 //次のトークンが期待している記号のときはトークンを一つ進める
 //それ以外はエラーを報告する
 void expect(const char *op){
@@ -81,6 +94,13 @@ bool at_eof(){
 
 bool startswith(char *p, const char *q){
     return memcmp(p, q, strlen(q)) == 0;
+}
+
+int is_alnum(char c){
+    return ('a' <= c && c <= 'z') ||
+           ('A' <= c && c <= 'Z') ||
+           ('0' <= c && c <= '9') ||
+           (c == '_');
 }
 
 // 新しいトークンを作成してcurに繋げる
@@ -125,8 +145,20 @@ Token *tokenize() {
             continue;
         }
 
+        if(startswith(p, "return") && !is_alnum(p[6])){
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
         if ('a' <= *p && *p <= 'z'){
-            cur = new_token(TK_IDENT, cur, p++, 1);
+            char *c = p;
+            while('a' <= *c && *c <= 'z'){
+                c++;
+            }
+            int len = c - p;
+            cur = new_token(TK_IDENT, cur, p, len);
+            p = c;
             continue;
         }
 
@@ -146,4 +178,13 @@ Token *tokenize() {
     // ex )12 + 31 - 15の場合、tokenは以下のように構成されている
     // &head -> TK_NUM("12") -> TK_RESERVED("+") -> TK_NUM("31") -> TK_RESERVED("-") -> TK_NUM("15") -> TK_EOF
     return head.next;
+}
+
+LVar *find_lvar(Token *tok){
+    for(LVar *var = locals; var; var = var->next){
+        if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
+            return var;
+        }
+    }
+    return NULL;
 }
