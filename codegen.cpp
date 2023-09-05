@@ -30,7 +30,16 @@ void program(){
 }
 
 Node *stmt(){
-    Node *node = expr();
+    Node *node;
+
+    if(consume_return()){
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_RETURN;
+        node->lhs = expr();
+    }else{
+        node = expr();
+    }
+
     expect(";");
     return node;
 }
@@ -125,7 +134,23 @@ Node *primary() {
     if(tok){
         Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_LVAR;
-        node->offset = (tok->str[0] - 'a' + 1) * 8;
+
+        LVar *lvar = find_lvar(tok);
+        if(lvar){
+            node->offset = lvar->offset;
+        }else{
+            lvar = static_cast<Lvar*>(calloc(1,sizeof(LVar)));
+            lvar->next = locals;
+            lvar->name = tok->str;
+            lvar->len = tok->len;
+            if(locals == NULL){
+                lvar->offset = 8;
+            }else{
+                lvar->offset = locals->offset + 8;
+            }
+            node->offset = lvar->offset;
+            locals = lvar;
+        }
         return node;
     }
 
@@ -147,6 +172,13 @@ void gen_lval(Node *node){
 void gen(Node *node){
 
     switch (node->kind){
+    case ND_RETURN:
+        gen(node->lhs);
+        printf(" pop rax\n");
+        printf(" mov rsp, rbp\n");
+        printf(" pop rbp\n");
+        printf(" ret\n");
+        return;
     case ND_NUM:
         printf(" push %d\n", node->val);
         return;
