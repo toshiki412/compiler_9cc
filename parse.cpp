@@ -47,18 +47,8 @@ bool consume(const char *op){
     return true;
 }
 
-Token* consume_ident(){
-    if(token->kind != TK_IDENT){
-        return NULL;
-    }
-    Token* tok = token;
-    token = token->next;
-    return tok;
-}
-
-
-Token* consume_return(){
-    if(token->kind != TK_RETURN){
+Token *consume_kind(TokenKind kind){
+    if(token->kind != kind){
         return NULL;
     }
     Token* tok = token;
@@ -148,6 +138,18 @@ Token *tokenize() {
         if(startswith(p, "return") && !is_alnum(p[6])){
             cur = new_token(TK_RETURN, cur, p, 6);
             p += 6;
+            continue;
+        }
+
+        if(startswith(p, "if") && !is_alnum(p[2])){
+            cur = new_token(TK_IF, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if(startswith(p, "else") && !is_alnum(p[4])){
+            cur = new_token(TK_ELSE, cur, p, 4);
+            p += 4;
             continue;
         }
 

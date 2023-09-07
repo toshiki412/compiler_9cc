@@ -32,7 +32,24 @@ void program(){
 Node *stmt(){
     Node *node;
 
-    if(consume_return()){
+    if(consume_kind(TK_IF)){
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_IF;
+        node->lhs = expr();
+        expect(")");
+        node->rhs = stmt();
+        if(consume_kind(TK_ELSE)){
+            Node *els = static_cast<Node*>(calloc(1,sizeof(Node)));
+            els->kind = ND_ELSE;
+            els->lhs = node->rhs;
+            els->rhs = stmt();
+            node->rhs = els;
+        }
+        return node;
+    }
+
+    if(consume_kind(TK_RETURN)){
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_RETURN;
         node->lhs = expr();
@@ -130,7 +147,7 @@ Node *primary() {
         return node;
     }
 
-    Token *tok = consume_ident();
+    Token *tok = consume_kind(TK_IDENT);
     if(tok){
         Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_LVAR;
@@ -172,6 +189,24 @@ void gen_lval(Node *node){
 void gen(Node *node){
 
     switch (node->kind){
+    case ND_IF:
+        //if(A) B; else C;
+        gen(node->lhs);     //Aをコンパイルしたコード
+        printf(" pop rax\n");
+        printf(" cmp rax, 0\n");
+        printf(" je .LelseXXX\n");
+        if(node->rhs->kind == ND_ELSE){
+            gen(node->rhs->lhs);//Bをコンパイルしたコード
+        }else{
+            gen(node->rhs);     //Bをコンパイルしたコード
+        }
+        printf(" jmp .LendXXX\n");
+        printf(".LelseXXX:\n");
+        if(node->rhs->kind == ND_ELSE){
+            gen(node->rhs->rhs); //Cをコンパイルしたコード
+        }
+        printf(".LendXXX:\n");
+        return;
     case ND_RETURN:
         gen(node->lhs);
         printf(" pop rax\n");

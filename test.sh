@@ -17,6 +17,7 @@ assert(){
     fi
 }
 
+# value test
 assert 0 "0;"
 assert 42 "42;"
 
@@ -28,6 +29,7 @@ assert 4 "(3+5)/2;"
 assert 2 "-3 + 5;"
 assert 10 "- - +10;"
 
+# compare test
 assert 0 "0 == 1;"
 assert 1 "42==42;"
 assert 1 "0 != 1;"
@@ -46,11 +48,18 @@ assert 0 "0>=1;"
 assert 1 "0>=0;"
 assert 1 "1>=0;"
 
+# variable test
 assert 14 "a = 3;
 b = 5 * 6 - 8;
 a + b / 2;"
 
+# return test
 assert 6 "foo = 1; bar = 2 + 3; return foo+bar;"
 assert 5 "return 5; return 8;"
+
+# if test
+assert 3 "a = 3; if(a == 3) return a; return 5;"
+assert 5 "a = 3; if(a != 3) return a; return 5;"
+assert 5 "a = 3; if(a != 3) return a; else return 5;"
 
 echo OK
