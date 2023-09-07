@@ -16,6 +16,10 @@ TK_RESERVED,    //記号
 TK_IDENT,       //識別子
 TK_NUM,         //整数トークン
 TK_RETURN,      //return
+TK_IF,          //if
+TK_ELSE,        //else
+TK_FOR,         //for
+TK_WHILE,       //while
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
@@ -52,8 +56,7 @@ void error_at(char *loc, const char *fmt, ...);
 void error(const char *fmt, ...);
 
 bool consume(const char *op);
-Token* consume_ident();
-Token* consume_return();
+Token *consume_kind(TokenKind kind);
 
 void expect(const char *op);
 
@@ -84,7 +87,11 @@ typedef enum{
     ND_ASSIGN,  // =
     ND_LVAR, // ローカル変数
     ND_NUM, // 整数
-    ND_RETURN, // return
+    ND_RETURN,
+    ND_IF,
+    ND_ELSE,
+    ND_FOR,
+    ND_WHILE,
 } NodeKind;
 
 
@@ -106,10 +113,13 @@ Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 
-// BNF
+// BNF  ?はオプションの要素で、存在が必須ではない
 // program    = stmt*
 // stmt       = expr ";"
-//              | return expr ";"
+//              | "return" expr ";"
+//              | "if" "(" expr ")" stmt ("else" stmt)?
+//              | "while" "(" expr ")" stmt
+//              | "for" "(" expr? ";" expr? ";"expr? ")" stmt
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
