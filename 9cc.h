@@ -91,6 +91,8 @@ typedef enum{
     ND_IF,
     ND_ELSE,
     ND_FOR,
+    ND_FOR_LEFT,
+    ND_FOR_RIGHT,
     ND_WHILE,
 } NodeKind;
 

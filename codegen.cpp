@@ -32,6 +32,36 @@ void program(){
 Node *stmt(){
     Node *node;
 
+    if(consume_kind(TK_FOR)){
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_FOR;
+
+        Node *left = static_cast<Node*>(calloc(1,sizeof(Node)));
+        left->kind = ND_FOR_LEFT;
+        Node *right = static_cast<Node*>(calloc(1,sizeof(Node)));
+        right->kind = ND_FOR_RIGHT;
+
+        if(!consume(";")){
+            left->lhs = expr();
+            expect(";");
+        }
+        if(!consume(";")){
+            left->rhs = expr();
+            expect(";");
+        }
+
+        if(!consume(")")){
+            right->lhs = expr();
+            expect(")");
+        }
+        right->rhs = stmt();
+
+        node->lhs = left;
+        node->rhs = right;
+        return node;
+    }
+
     if(consume_kind(TK_WHILE)){
         expect("(");
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
@@ -195,37 +225,59 @@ void gen_lval(Node *node){
     printf(" push rax\n");
 }
 
+int genCounter = 0;
+
 //スタックマシン
 void gen(Node *node){
+    if(!node) return;
+    genCounter += 1;
+    int id = genCounter;
 
     switch (node->kind){
-    case ND_WHILE:
-        printf(".LbeginXXX:\n");
-        gen(node->lhs);
+    case ND_FOR:
+        //for(A;B;C) D;
+        gen(node->lhs->lhs);        //Aをコンパイルしたコード
+        printf(".Lbegin%03d:\n", id);
+        gen(node->lhs->rhs);        //Bをコンパイルしたコード
+        if(!node->lhs->rhs){        //無限ループの対応
+            printf(" push 1\n");
+        }
         printf(" pop rax\n");
         printf(" cmp rax, 0\n");
-        printf(" je .LendXXX\n");
-        gen(node->rhs);
-        printf(" jmp .LbeginXXX\n");
-        printf(".LendXXX:\n");
+        printf(" je .Lend%03d\n", id);
+        gen(node->rhs->rhs);        //Dをコンパイルしたコード
+        gen(node->rhs->lhs);        //Cをコンパイルしたコード 
+        printf(" jmp .Lbegin%03d\n", id);
+        printf(".Lend%03d:\n", id);
+        return;
+    case ND_WHILE:
+        //while(A) B;
+        printf(".Lbegin%03d:\n", id);
+        gen(node->lhs);             //Aをコンパイルしたコード
+        printf(" pop rax\n");
+        printf(" cmp rax, 0\n");
+        printf(" je .Lend%03d\n", id);
+        gen(node->rhs);             //Bをコンパイルしたコード
+        printf(" jmp .Lbegin%03d\n", id);
+        printf(".Lend%03d:\n", id);
         return;
     case ND_IF:
         //if(A) B; else C;
-        gen(node->lhs);     //Aをコンパイルしたコード
+        gen(node->lhs);             //Aをコンパイルしたコード
         printf(" pop rax\n");
         printf(" cmp rax, 0\n");
-        printf(" je .LelseXXX\n");
+        printf(" je .Lelse%03d\n", id);
         if(node->rhs->kind == ND_ELSE){
-            gen(node->rhs->lhs);//Bをコンパイルしたコード
+            gen(node->rhs->lhs);    //Bをコンパイルしたコード
         }else{
-            gen(node->rhs);     //Bをコンパイルしたコード
+            gen(node->rhs);         //Bをコンパイルしたコード
         }
-        printf(" jmp .LendXXX\n");
-        printf(".LelseXXX:\n");
+        printf(" jmp .Lend%03d\n", id);
+        printf(".Lelse%03d:\n", id);
         if(node->rhs->kind == ND_ELSE){
-            gen(node->rhs->rhs); //Cをコンパイルしたコード
+            gen(node->rhs->rhs);    //Cをコンパイルしたコード
         }
-        printf(".LendXXX:\n");
+        printf(".Lend%03d:\n", id);
         return;
     case ND_RETURN:
         gen(node->lhs);
