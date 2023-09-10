@@ -62,4 +62,9 @@ assert 3 "a = 3; if(a == 3) return a; return 5;"
 assert 5 "a = 3; if(a != 3) return a; return 5;"
 assert 5 "a = 3; if(a != 3) return a; else return 5;"
 
+# while test
+assert 11 "i=0; 
+while(i<=10) i=i+1; 
+return i;"
+
 echo OK

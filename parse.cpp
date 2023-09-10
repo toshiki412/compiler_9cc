@@ -105,6 +105,21 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     return tok;
 }
 
+typedef struct ReservedWord ReservedWord;
+struct ReservedWord{
+    char *word;
+    TokenKind kind;
+};
+
+ReservedWord reservedWords[] = {
+    {"return", TK_RETURN},
+    {"if", TK_IF},
+    {"else", TK_ELSE},
+    {"while", TK_WHILE},
+    {"", TK_EOF},
+};
+
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;
@@ -135,21 +150,21 @@ Token *tokenize() {
             continue;
         }
 
-        if(startswith(p, "return") && !is_alnum(p[6])){
-            cur = new_token(TK_RETURN, cur, p, 6);
-            p += 6;
-            continue;
-        }
+        bool found = false;
+        for(int i = 0; reservedWords[i].kind != TK_EOF; i++){
+            char *w = reservedWords[i].word;
+            int wordLen = strlen(w);
+            TokenKind kind = reservedWords[i].kind;
 
-        if(startswith(p, "if") && !is_alnum(p[2])){
-            cur = new_token(TK_IF, cur, p, 2);
-            p += 2;
-            continue;
+            if(startswith(p, w) && !is_alnum(p[wordLen])){
+                cur = new_token(kind, cur, p, wordLen);
+                p += wordLen;
+                found = true;
+                break;
+            }
         }
-
-        if(startswith(p, "else") && !is_alnum(p[4])){
-            cur = new_token(TK_ELSE, cur, p, 4);
-            p += 4;
+        
+        if(found){
             continue;
         }
 

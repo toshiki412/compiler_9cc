@@ -32,6 +32,16 @@ void program(){
 Node *stmt(){
     Node *node;
 
+    if(consume_kind(TK_WHILE)){
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_WHILE;
+        node->lhs = expr();
+        expect(")");
+        node->rhs = stmt();
+        return node;
+    }
+
     if(consume_kind(TK_IF)){
         expect("(");
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
@@ -189,6 +199,16 @@ void gen_lval(Node *node){
 void gen(Node *node){
 
     switch (node->kind){
+    case ND_WHILE:
+        printf(".LbeginXXX:\n");
+        gen(node->lhs);
+        printf(" pop rax\n");
+        printf(" cmp rax, 0\n");
+        printf(" je .LendXXX\n");
+        gen(node->rhs);
+        printf(" jmp .LbeginXXX\n");
+        printf(".LendXXX:\n");
+        return;
     case ND_IF:
         //if(A) B; else C;
         gen(node->lhs);     //Aをコンパイルしたコード
