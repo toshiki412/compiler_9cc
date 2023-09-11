@@ -78,4 +78,12 @@ if(a == 1) return 4;
 if(a == 2) return 5;
 if(a == 3) return 6;"
 
+# block test
+assert 10 "a = 0;
+for(;;) {
+    a = a + 1;
+    if(a==5) return 10;
+}
+return 2;"
+
 echo OK
