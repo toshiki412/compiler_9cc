@@ -94,6 +94,7 @@ typedef enum{
     ND_FOR_LEFT,
     ND_FOR_RIGHT,
     ND_WHILE,
+    ND_BLOCK, //{}
 } NodeKind;
 
 
@@ -105,6 +106,7 @@ struct Node{
     NodeKind kind;
     Node *lhs; //左辺
     Node *rhs; //右辺
+    Node **block; //kindがND_BLOCKのとき使う
     int val;   //kindがND_NUMのとき使う
     int offset; //kindがND_LVARのとき使う
 };
@@ -122,6 +124,7 @@ Node *new_node_num(int val);
 //              | "if" "(" expr ")" stmt ("else" stmt)?
 //              | "while" "(" expr ")" stmt
 //              | "for" "(" expr? ";" expr? ";"expr? ")" stmt
+//              | "{" stmt* "}" 
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
