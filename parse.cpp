@@ -146,7 +146,7 @@ Token *tokenize() {
                 continue;
         }
 
-        if (strchr("+-*/()<>=;{}", *p)) {
+        if (strchr("+-*/()<>=;{},", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
@@ -171,7 +171,7 @@ Token *tokenize() {
 
         if ('a' <= *p && *p <= 'z'){
             char *c = p;
-            while('a' <= *c && *c <= 'z'){
+            while(is_alnum(*c)){
                 c++;
             }
             int len = c - p;

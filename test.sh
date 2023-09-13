@@ -5,7 +5,10 @@ assert(){
     input="$2"
 
     ./9cc "$input" > tmp.s
-    cc -o tmp tmp.s
+    cd func
+    g++ -c func.cpp
+    cd ../
+    g++ -o tmp tmp.s func/func.o -Wl,-z,noexecstack   #-Wl,-z,noexecstackはリンカオプションで警告文を消すために付けた
     ./tmp
     actual="$?"
 
@@ -88,5 +91,7 @@ return 2;"
 
 # function test
 assert 0 "foo();"
+assert 0 "bar(3,4);"
+assert 0 "piyo(5, 9, 21);"
 
 echo OK

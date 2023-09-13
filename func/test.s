@@ -1,4 +1,7 @@
 .intel_syntax noprefix
 .globl main
 main:
- call foo
+ mov rdi, 3
+ mov rsi, 4
+ call bar
+ ret
