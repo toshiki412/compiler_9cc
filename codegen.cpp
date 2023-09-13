@@ -207,7 +207,16 @@ Node *primary() {
             node->kind = ND_FUNC;
             node->funcName = tok->str;
             node->len = tok->len;
-            expect(")");
+
+            //引数
+            node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
+            for(int i = 0; !consume(")"); i++){
+                node->block[i] = expr();
+                if(consume(")")){
+                    break;
+                }
+                expect(",");
+            }
             return node;
         }
 
@@ -248,6 +257,7 @@ void gen_lval(Node *node){
 }
 
 int genCounter = 0;
+const char *argRegs[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"};
 
 //スタックマシン
 void gen(Node *node){
@@ -255,10 +265,21 @@ void gen(Node *node){
     genCounter += 1;
     int id = genCounter;
     char name[100] = {0};
+    int argCount = 0;
 
     switch (node->kind){
     case ND_FUNC:
         memcpy(name, node->funcName, node->len);
+        for(int i = 0; node->block[i]; i++){
+            gen(node->block[i]);
+            argCount++;
+        }
+
+        //引数
+        for(int i = argCount - 1; i >= 0; i--){
+            printf(" pop %s\n", argRegs[i]);
+        }
+        
         printf(" call %s\n", name);
         return;
     case ND_BLOCK:
