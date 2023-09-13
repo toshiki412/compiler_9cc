@@ -86,4 +86,7 @@ for(;;) {
 }
 return 2;"
 
+# function test
+assert 0 "foo();"
+
 echo OK

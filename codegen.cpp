@@ -201,6 +201,16 @@ Node *primary() {
 
     Token *tok = consume_kind(TK_IDENT);
     if(tok){
+        if(consume("(")){
+            //ŠÖ”ŒÄ‚Ño‚µ
+            Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+            node->kind = ND_FUNC;
+            node->funcName = tok->str;
+            node->len = tok->len;
+            expect(")");
+            return node;
+        }
+
         Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_LVAR;
 
@@ -244,8 +254,13 @@ void gen(Node *node){
     if(!node) return;
     genCounter += 1;
     int id = genCounter;
+    char name[100] = {0};
 
     switch (node->kind){
+    case ND_FUNC:
+        memcpy(name, node->funcName, node->len);
+        printf(" call %s\n", name);
+        return;
     case ND_BLOCK:
         for(int i = 0; node->block[i]; i++){
             gen(node->block[i]);
