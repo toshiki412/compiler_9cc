@@ -95,6 +95,7 @@ typedef enum{
     ND_FOR_RIGHT,
     ND_WHILE,
     ND_BLOCK, //{}
+    ND_FUNC, //関数
 } NodeKind;
 
 
@@ -107,6 +108,8 @@ struct Node{
     Node *lhs; //左辺
     Node *rhs; //右辺
     Node **block; //kindがND_BLOCKのとき使う
+    char *funcName; //kindがND_FUNCのとき使う
+    int len; //kindがND_FUNCのとき使う
     int val;   //kindがND_NUMのとき使う
     int offset; //kindがND_LVARのとき使う
 };
@@ -132,7 +135,7 @@ Node *new_node_num(int val);
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
-// primary    = num | ident | "(" expr ")"
+// primary    = num | ident ( "(" ")")? | "(" expr ")"
 
 void program();
 Node *stmt();
