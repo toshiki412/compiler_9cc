@@ -1,5 +1,8 @@
 #include <stdio.h>
 
-void foo() {
+void foo () asm ("foo");
+
+void foo()  {
     printf("function OK!\n");
 }
+
