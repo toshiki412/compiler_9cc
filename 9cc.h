@@ -95,7 +95,8 @@ typedef enum{
     ND_FOR_RIGHT,
     ND_WHILE,
     ND_BLOCK, //{}
-    ND_FUNC, //関数
+    ND_FUNC_CALL, //関数呼び出し
+    ND_FUNC_DEF, //関数定義
 } NodeKind;
 
 
@@ -109,7 +110,6 @@ struct Node{
     Node *rhs; //右辺
     Node **block; //kindがND_BLOCKのとき使う
     char *funcName; //kindがND_FUNCのとき使う
-    int len; //kindがND_FUNCのとき使う
     int val;   //kindがND_NUMのとき使う
     int offset; //kindがND_LVARのとき使う
 };
@@ -121,8 +121,10 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
-// program    = stmt*
+// program    = func*
+// func       = ident "(" ")" "{" stmt "}"
 // stmt       = expr ";"
+//              | "{" stmt* "}"
 //              | "return" expr ";"
 //              | "if" "(" expr ")" stmt ("else" stmt)?
 //              | "while" "(" expr ")" stmt
@@ -140,6 +142,7 @@ Node *new_node_num(int val);
 //              | "(" expr ")"
 
 void program();
+Node *func();
 Node *stmt();
 Node *expr();
 Node *assign();

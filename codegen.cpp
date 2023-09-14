@@ -25,9 +25,26 @@ Node *code[100];
 void program(){
     int i = 0;
     while(!at_eof()){
-        code[i++] = stmt();
+        code[i++] = func();
     }
     code[i] = NULL;
+}
+
+Node *func(){
+    Node *node;
+    Token *tok = consume_kind(TK_IDENT);
+    if(tok == NULL){
+        error("not function!");
+    }
+    node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->kind = ND_FUNC_DEF;
+    node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
+    memcpy(node->funcName, tok->str, tok->len);
+    expect("(");
+    // TODO args
+    expect(")");
+    node->lhs = stmt();
+    return node;
 }
 
 Node *stmt(){
@@ -204,9 +221,9 @@ Node *primary() {
         if(consume("(")){
             //関数呼び出し
             Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-            node->kind = ND_FUNC;
-            node->funcName = tok->str;
-            node->len = tok->len;
+            node->kind = ND_FUNC_CALL;
+            node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
+            memcpy(node->funcName, tok->str, tok->len);
 
             //引数
             node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
@@ -251,9 +268,9 @@ void gen_lval(Node *node){
         error("not ND_LVAR");
     }
 
-    printf(" mov rax, rbp\n");
-    printf(" sub rax, %d\n", node->offset);
-    printf(" push rax\n");
+    printf("    mov rax, rbp\n");
+    printf("    sub rax, %d\n", node->offset);
+    printf("    push rax\n");
 }
 
 int genCounter = 0;
@@ -264,12 +281,26 @@ void gen(Node *node){
     if(!node) return;
     genCounter += 1;
     int id = genCounter;
-    char name[100] = {0};
     int argCount = 0;
 
     switch (node->kind){
-    case ND_FUNC:
-        memcpy(name, node->funcName, node->len);
+    case ND_FUNC_DEF:
+        printf("%s:\n", node->funcName);
+
+        //プロローグ
+        printf("    push rbp\n");
+        printf("    mov rbp, rsp\n");
+        printf("    sub rsp, 208\n"); //TODO 引数の数*8を指定する
+
+        gen(node->lhs);
+
+        //エピローグ
+        printf("    mov rsp, rbp\n");
+        printf("    pop rbp\n");
+        printf("    ret\n");
+
+        return;
+    case ND_FUNC_CALL:
         for(int i = 0; node->block[i]; i++){
             gen(node->block[i]);
             argCount++;
@@ -277,27 +308,29 @@ void gen(Node *node){
 
         //引数
         for(int i = argCount - 1; i >= 0; i--){
-            printf(" pop %s\n", argRegs[i]);
+            printf("    pop %s\n", argRegs[i]);
         }
         
         //関数呼び出し
-        printf(" mov rax, rsp\n");
-        printf(" and rax, 15\n"); //下位４bitをマスクする
-        printf(" jnz .L.call.%03d\n", id);
-        printf(" mov rax, 0\n");
-        printf(" call %s\n", name);
-        printf(" jmp .L.end.%03d\n", id);
+        printf("    mov rax, rsp\n");
+        printf("    and rax, 15\n"); //下位４bitをマスクする
+        printf("    jnz .L.call.%03d\n", id);
+        printf("    mov rax, 0\n");
+        printf("    call %s\n", node->funcName);
+        printf("    jmp .L.end.%03d\n", id);
         printf(".L.call.%03d:\n", id);
-        printf(" sub rsp, 8\n");
-        printf(" mov rax, 0\n");
-        printf(" call %s\n", name);
-        printf(" add rsp, 8\n");
+        printf("    sub rsp, 8\n");
+        printf("    mov rax, 0\n");
+        printf("    call %s\n", node->funcName);
+        printf("    add rsp, 8\n");
         printf(".L.end.%03d:\n", id);
+        printf("    push rax\n"); //関数からリターンしたときにraxに入っている値が関数の返り値という約束
+
         return;
     case ND_BLOCK:
         for(int i = 0; node->block[i]; i++){
             gen(node->block[i]);
-            printf(" pop rax\n");
+            printf("    pop rax\n");
         }
         return;
     case ND_FOR:
@@ -306,39 +339,39 @@ void gen(Node *node){
         printf(".Lbegin%03d:\n", id);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if(!node->lhs->rhs){        //無限ループの対応
-            printf(" push 1\n");
+            printf("    push 1\n");
         }
-        printf(" pop rax\n");
-        printf(" cmp rax, 0\n");
-        printf(" je .Lend%03d\n", id);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .Lend%03d\n", id);
         gen(node->rhs->rhs);        //Dをコンパイルしたコード
         gen(node->rhs->lhs);        //Cをコンパイルしたコード 
-        printf(" jmp .Lbegin%03d\n", id);
+        printf("    jmp .Lbegin%03d\n", id);
         printf(".Lend%03d:\n", id);
         return;
     case ND_WHILE:
         //while(A) B;
         printf(".Lbegin%03d:\n", id);
         gen(node->lhs);             //Aをコンパイルしたコード
-        printf(" pop rax\n");
-        printf(" cmp rax, 0\n");
-        printf(" je .Lend%03d\n", id);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .Lend%03d\n", id);
         gen(node->rhs);             //Bをコンパイルしたコード
-        printf(" jmp .Lbegin%03d\n", id);
+        printf("    jmp .Lbegin%03d\n", id);
         printf(".Lend%03d:\n", id);
         return;
     case ND_IF:
         //if(A) B; else C;
         gen(node->lhs);             //Aをコンパイルしたコード
-        printf(" pop rax\n");
-        printf(" cmp rax, 0\n");
-        printf(" je .Lelse%03d\n", id);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .Lelse%03d\n", id);
         if(node->rhs->kind == ND_ELSE){
             gen(node->rhs->lhs);    //Bをコンパイルしたコード
         }else{
             gen(node->rhs);         //Bをコンパイルしたコード
         }
-        printf(" jmp .Lend%03d\n", id);
+        printf("    jmp .Lend%03d\n", id);
         printf(".Lelse%03d:\n", id);
         if(node->rhs->kind == ND_ELSE){
             gen(node->rhs->rhs);    //Cをコンパイルしたコード
@@ -347,72 +380,72 @@ void gen(Node *node){
         return;
     case ND_RETURN:
         gen(node->lhs);
-        printf(" pop rax\n");
-        printf(" mov rsp, rbp\n");
-        printf(" pop rbp\n");
-        printf(" ret\n");
+        printf("    pop rax\n");
+        printf("    mov rsp, rbp\n");
+        printf("    pop rbp\n");
+        printf("    ret\n");
         return;
     case ND_NUM:
-        printf(" push %d\n", node->val);
+        printf("    push %d\n", node->val);
         return;
     case ND_LVAR:
         gen_lval(node);
-        printf(" pop rax\n");
-        printf(" mov rax, [rax]\n");
-        printf(" push rax\n");
+        printf("    pop rax\n");
+        printf("    mov rax, [rax]\n");
+        printf("    push rax\n");
         return;
     case ND_ASSIGN:
         gen_lval(node->lhs);
         gen(node->rhs);
-        printf(" pop rdi\n");
-        printf(" pop rax\n");
-        printf(" mov [rax], rdi\n");
-        printf(" push rdi\n");
+        printf("    pop rdi\n");
+        printf("    pop rax\n");
+        printf("    mov [rax], rdi\n");
+        printf("    push rdi\n");
         return;
     }
 
     gen(node->lhs);
     gen(node->rhs);
 
-    printf(" pop rdi\n");
-    printf(" pop rax\n");
+    printf("    pop rdi\n");
+    printf("    pop rax\n");
 
     switch (node->kind){
     case ND_ADD:
-        printf(" add rax, rdi\n");
+        printf("    add rax, rdi\n");
         break;
     case ND_SUB:
-        printf(" sub rax, rdi\n");
+        printf("    sub rax, rdi\n");
         break;
     case ND_MUL:
-        printf(" imul rax, rdi\n");
+        printf("    imul rax, rdi\n");
         break;
     case ND_DIV:
-        printf(" cqo\n");
-        printf(" idiv rdi\n");
+        printf("    cqo\n");
+        printf("    idiv rdi\n");
         break;
     case ND_EQ:
-        printf(" cmp rax, rdi\n");
-        printf(" sete al\n");
-        printf(" movzb rax, al\n");
+        printf("    cmp rax, rdi\n");
+        printf("    sete al\n");
+        printf("    movzb rax, al\n");
         break;
     case ND_NE:
-        printf(" cmp rax, rdi\n");
-        printf(" setne al\n");
-        printf(" movzb rax, al\n");
+        printf("    cmp rax, rdi\n");
+        printf("    setne al\n");
+        printf("    movzb rax, al\n");
         break;
     case ND_LT:
-        printf(" cmp rax, rdi\n");
-        printf(" setl al\n");
-        printf(" movzb rax, al\n");
+        printf("    cmp rax, rdi\n");
+        printf("    setl al\n");
+        printf("    movzb rax, al\n");
         break;
     case ND_LE:
-        printf(" cmp rax, rdi\n");
-        printf(" setle al\n");
-        printf(" movzb rax, al\n");
+        printf("    cmp rax, rdi\n");
+        printf("    setle al\n");
+        printf("    movzb rax, al\n");
         break;
     }
     
-    printf(" push rax\n");
+    printf("    push rax\n");
 }
 
