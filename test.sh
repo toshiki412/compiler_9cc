@@ -31,14 +31,59 @@ func() {
     return 5;
 }"
 
-# assert 55 "main() {
-#     return fractal(10);
-# }
-# fractal(n) {
-#     if (n < 0) return 0;
-#     return n + fractal(n-1);
-# }
-# "
+assert 3 "
+main() {
+    return add(1,2);
+}
+add(a, b) {
+    return a+b;
+}
+"
+
+assert 4 "
+main() {
+    return add(1,2,3);
+}
+add(a, b, c) {
+    return a+c;
+}
+"
+
+assert 55 "
+main() {
+    return sum(10);
+}
+sum(n) {
+    if (n < 0) {
+        return 0;
+    } else {
+        return n + sum(n-1);
+    }
+}
+"
+assert 55 "
+main() {
+    return sum(10);
+}
+sum(n) {
+    if (n < 0) return 0;
+    return n + sum(n-1);
+}
+"
+
+assert 55 "
+main() {
+    a = 10;
+    return sum(a);
+}
+sum(n) {
+    if (n < 0) {
+        return 0;
+    } else {
+        return n + sum(n-1);
+    }
+}
+"
 
 # assert 42 "42;"
 

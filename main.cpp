@@ -6,8 +6,6 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    // locals = NULL;
-
     // トークナイズしてパースする
     user_input = argv[1];
     token = tokenize();
@@ -17,7 +15,9 @@ int main(int argc, char **argv){
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
 
+    currentFunc = 0;
     for(int i = 0; code[i]; i++){
+        currentFunc++;
         gen(code[i]);
     }
 

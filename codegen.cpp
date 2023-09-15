@@ -31,6 +31,7 @@ void program(){
 }
 
 Node *func(){
+    currentFunc++;
     Node *node;
     Token *tok = consume_kind(TK_IDENT);
     if(tok == NULL){
@@ -39,10 +40,20 @@ Node *func(){
     node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->kind = ND_FUNC_DEF;
     node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
+    node->args = static_cast<Node**>(calloc(10,sizeof(Node*))); //配列の長さを作る
     memcpy(node->funcName, tok->str, tok->len);
     expect("(");
-    // TODO args
-    expect(")");
+    int i = 0;
+    for(int i = 0; !consume(")"); i++){
+        Token *tok = consume_kind(TK_IDENT);
+        if(tok != NULL){
+            node->args[i] = variable(tok);
+        }
+        if(consume(")")){
+            break;
+        }
+        expect(",");
+    }
     node->lhs = stmt();
     return node;
 }
@@ -237,30 +248,39 @@ Node *primary() {
             return node;
         }
 
-        Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-        node->kind = ND_LVAR;
-
-        LVar *lvar = find_lvar(tok);
-        if(lvar){
-            node->offset = lvar->offset;
-        }else{
-            lvar = static_cast<Lvar*>(calloc(1,sizeof(LVar)));
-            lvar->next = locals;
-            lvar->name = tok->str;
-            lvar->len = tok->len;
-            if(locals == NULL){
-                lvar->offset = 8;
-            }else{
-                lvar->offset = locals->offset + 8;
-            }
-            node->offset = lvar->offset;
-            locals = lvar;
-        }
-        return node;
+        //関数呼び出しではない場合、変数。
+        return variable(tok);
     }
 
     // そうでなければ数値のはず
     return new_node_num(expect_number());
+}
+
+Node* variable(Token *tok){
+    Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->kind = ND_LVAR;
+
+    LVar *lvar = find_lvar(tok);
+    if(lvar){
+        node->offset = lvar->offset;
+    }else{
+        lvar = static_cast<Lvar*>(calloc(1,sizeof(LVar)));
+        lvar->next = locals[currentFunc];
+        lvar->name = tok->str;
+        lvar->len = tok->len;
+        if(locals[currentFunc] == NULL){
+            lvar->offset = 8;
+        }else{
+            lvar->offset = locals[currentFunc]->offset + 8;
+        }
+        node->offset = lvar->offset;
+        locals[currentFunc] = lvar;
+        char name[100] = {0};
+        memcpy(name, tok->str, tok->len);
+        fprintf(stderr, "*NEW VARIABLE* %s\n", name);
+    }
+
+    return node;
 }
 
 void gen_lval(Node *node){
@@ -290,7 +310,17 @@ void gen(Node *node){
         //プロローグ
         printf("    push rbp\n");
         printf("    mov rbp, rsp\n");
-        printf("    sub rsp, 208\n"); //TODO 引数の数*8を指定する
+        //引数の値をスタックに積む
+        for(int i = 0; node->args[i]; i++){
+            printf("    push %s\n", argRegs[i]);
+            argCount++;
+        }
+        //引数の数をのぞいた変数の数だけrspをずらして、変数領域を確保する。
+        if(locals[currentFunc]){
+            int offset = locals[currentFunc][0].offset;
+            offset -= argCount * 8;
+            printf("    sub rsp, %d\n", offset);
+        }
 
         gen(node->lhs);
 
@@ -330,7 +360,7 @@ void gen(Node *node){
     case ND_BLOCK:
         for(int i = 0; node->block[i]; i++){
             gen(node->block[i]);
-            printf("    pop rax\n");
+            // printf("    pop rax\n");
         }
         return;
     case ND_FOR:
