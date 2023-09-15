@@ -50,7 +50,8 @@ extern Token *token;
 // 入力プログラム
 extern char *user_input;
 
-extern LVar *locals;
+extern LVar *locals[];
+extern int currentFunc;
 
 void error_at(char *loc, const char *fmt, ...);
 void error(const char *fmt, ...);
@@ -76,17 +77,17 @@ Token *tokenize();
 
 //抽象構文木の種類
 typedef enum{
-    ND_ADD, // +
-    ND_SUB, // -
-    ND_MUL, // *
-    ND_DIV, // /
-    ND_EQ,  // ==
-    ND_NE,  // !=
-    ND_LT,  // <
-    ND_LE,  // <=
-    ND_ASSIGN,  // =
-    ND_LVAR, // ローカル変数
-    ND_NUM, // 整数
+    ND_ADD,         // +
+    ND_SUB,         // -
+    ND_MUL,         // *
+    ND_DIV,         // /
+    ND_EQ,          // ==
+    ND_NE,          // !=
+    ND_LT,          // <
+    ND_LE,          // <=
+    ND_ASSIGN,      // =
+    ND_LVAR,        // ローカル変数
+    ND_NUM,         // 整数
     ND_RETURN,
     ND_IF,
     ND_ELSE,
@@ -94,9 +95,9 @@ typedef enum{
     ND_FOR_LEFT,
     ND_FOR_RIGHT,
     ND_WHILE,
-    ND_BLOCK, //{}
-    ND_FUNC_CALL, //関数呼び出し
-    ND_FUNC_DEF, //関数定義
+    ND_BLOCK,       //{}
+    ND_FUNC_CALL,   //関数呼び出し
+    ND_FUNC_DEF,    //関数定義
 } NodeKind;
 
 
@@ -106,12 +107,13 @@ typedef struct Node Node;
 //抽象構文木のノードの型
 struct Node{
     NodeKind kind;
-    Node *lhs; //左辺
-    Node *rhs; //右辺
-    Node **block; //kindがND_BLOCKのとき使う
+    Node *lhs;      //左辺
+    Node *rhs;      //右辺
+    Node **block;   //kindがND_BLOCKのとき使う
     char *funcName; //kindがND_FUNCのとき使う
-    int val;   //kindがND_NUMのとき使う
-    int offset; //kindがND_LVARのとき使う
+    Node **args;    //kindがND_FUNC_DEFのとき使う
+    int val;        //kindがND_NUMのとき使う
+    int offset;     //kindがND_LVARのとき使う
 };
 
 extern Node *code[];
@@ -122,7 +124,7 @@ Node *new_node_num(int val);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 // program    = func*
-// func       = ident "(" ")" "{" stmt "}"
+// func       = ident "(" ident* )" stmt
 // stmt       = expr ";"
 //              | "{" stmt* "}"
 //              | "return" expr ";"
@@ -153,5 +155,6 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+Node* variable(Token *tok);
 void gen_lval(Node *node);
 void gen(Node *node);

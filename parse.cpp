@@ -7,7 +7,8 @@ Token *token;
 char *user_input;
 
 //ローカル変数
-Lvar *locals;
+Lvar *locals[100];
+int currentFunc = 0;
 
 //エラーを報告するための関数
 //locはエラーが発生した位置
@@ -199,7 +200,7 @@ Token *tokenize() {
 }
 
 LVar *find_lvar(Token *tok){
-    for(LVar *var = locals; var; var = var->next){
+    for(LVar *var = locals[currentFunc]; var; var = var->next){
         if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
             return var;
         }
