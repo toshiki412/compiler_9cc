@@ -98,6 +98,8 @@ typedef enum{
     ND_BLOCK,       //{}
     ND_FUNC_CALL,   //関数呼び出し
     ND_FUNC_DEF,    //関数定義
+    ND_ADDR,    //アドレス &
+    ND_DEREF,    //参照先の値  *
 } NodeKind;
 
 
@@ -126,19 +128,22 @@ Node *new_node_num(int val);
 // program    = func*
 // func       = ident "(" ident* )" stmt
 // stmt       = expr ";"
-//              | "{" stmt* "}"
-//              | "return" expr ";"
-//              | "if" "(" expr ")" stmt ("else" stmt)?
-//              | "while" "(" expr ")" stmt
-//              | "for" "(" expr? ";" expr? ";"expr? ")" stmt
-//              | "{" stmt* "}" 
+//            | "{" stmt* "}"
+//            | "return" expr ";"
+//            | "if" "(" expr ")" stmt ("else" stmt)?
+//            | "while" "(" expr ")" stmt
+//            | "for" "(" expr? ";" expr? ";"expr? ")" stmt
+//            | "{" stmt* "}" 
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
-// unary      = ("+" | "-")? primary
+// unary      = "+"? primary
+//            | "-"? primary
+//            | "*" primary
+//            | "&" primary
 // primary    = num 
 //              | ident ( "(" expr* ")")? 
 //              | "(" expr ")"
