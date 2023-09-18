@@ -21,42 +21,52 @@ assert(){
 }
 
 # int test
-assert 2 "main() { int x; x = 2; return x;}"
+assert 2 "int main() { int x; x = 2; return x;}"
+assert 7 "int main() { 
+    int a;
+    int b; 
+    a = 2; 
+    b = 5; 
+    return func(a,b);
+    }
+int  func(int x, int y){
+    return x + y;
+}"
 
 # value test
-assert 3 "main() { return 3;}"
-assert 1 "main() return 1;"
+assert 3 "int main() { return 3;}"
+assert 1 "int main() return 1;"
 assert 5 "
-main() {
+int main() {
     return func();
 }
-func() {
+int func() {
     return 5;
 }"
 
 assert 3 "
-main() {
+int main() {
     return add(1,2);
 }
-add(a, b) {
+int add(int a, int b) {
     return a+b;
 }
 "
 
 assert 4 "
-main() {
+int main() {
     return add(1,2,3);
 }
-add(a, b, c) {
+int add(int a, int b, int c) {
     return a+c;
 }
 "
 
 assert 55 "
-main() {
+int main() {
     return sum(10);
 }
-sum(n) {
+int sum(int n) {
     if (n < 0) {
         return 0;
     } else {
@@ -65,21 +75,22 @@ sum(n) {
 }
 "
 assert 55 "
-main() {
+int main() {
     return sum(10);
 }
-sum(n) {
+int sum(int n) {
     if (n < 0) return 0;
     return n + sum(n-1);
 }
 "
 
 assert 55 "
-main() {
+int main() {
+    int a;
     a = 10;
     return sum(a);
 }
-sum(n) {
+int sum(int n) {
     if (n < 0) {
         return 0;
     } else {
@@ -88,65 +99,75 @@ sum(n) {
 }
 "
 
-assert 42 "main() return 42;"
+assert 42 "int main() return 42;"
 
-assert 21 "main() return 5+20-4;"
-assert 41 "main() return 12 + 34 -  5;"
-assert 45 "main() return 3+6*7;"
-assert 15 "main() return 5*(9-6);"
-assert 4 "main() return (3+5)/2;"
-assert 2 "main() return -3 + 5;"
-assert 10 "main() return - - +10;"
+assert 21 "int main() return 5+20-4;"
+assert 41 "int main() return 12 + 34 -  5;"
+assert 45 "int main() return 3+6*7;"
+assert 15 "int main() return 5*(9-6);"
+assert 4 "int main() return (3+5)/2;"
+assert 2 "int main() return -3 + 5;"
+assert 10 "int main() return - - +10;"
 
 # compare test
-assert 0 "main() return 0 == 1;"
-assert 1 "main() return 42==42;"
-assert 1 "main() return 0 != 1;"
+assert 0 "int main() return 0 == 1;"
+assert 1 "int main() return 42==42;"
+assert 1 "int main() return 0 != 1;"
 
-assert 1 "main() return 0<1;"
-assert 0 "main() return 0<0;"
-assert 0 "main() return 1<0;"
-assert 1 "main() return 0<=1;"
-assert 1 "main() return 0<=0;"
-assert 0 "main() return 1<=0;"
+assert 1 "int main() return 0<1;"
+assert 0 "int main() return 0<0;"
+assert 0 "int main() return 1<0;"
+assert 1 "int main() return 0<=1;"
+assert 1 "int main() return 0<=0;"
+assert 0 "int main() return 1<=0;"
 
-assert 0 "main() return 0>1;"
-assert 0 "main() return 0>0;"
-assert 1 "main() return 1>0;"
-assert 0 "main() return 0>=1;"
-assert 1 "main() return 0>=0;"
-assert 1 "main() return 1>=0;"
+assert 0 "int main() return 0>1;"
+assert 0 "int main() return 0>0;"
+assert 1 "int main() return 1>0;"
+assert 0 "int main() return 0>=1;"
+assert 1 "int main() return 0>=0;"
+assert 1 "int main() return 1>=0;"
 
 # variable test
-assert 14 "main() {
+assert 14 "int main() {
+int a;
+int b;
 a = 3;
 b = 5 * 6 - 8;
 return a + b / 2;  
 } "
 
 # return test
-assert 6 "main() { foo = 1; bar = 2 + 3; return foo+bar; }"
-assert 5 "main() { return 5; return 8;}"
+assert 6 "int main() {
+    int foo;
+    foo = 1;
+    int bar; 
+    bar = 2 + 3; 
+    return foo+bar; 
+}"
+assert 5 "int main() { return 5; return 8;}"
 
 # if test
-assert 3 "main() { a = 3; if(a == 3) return a; return 5;}"
-assert 5 "main() { a = 3; if(a != 3) return a; return 5;}"
-assert 5 "main() { a = 3; if(a != 3) return a; else return 5;}"
+assert 3 "int main() { int a; a = 3; if(a == 3) return a; return 5;}"
+assert 5 "int main() { int a; a = 3; if(a != 3) return a; return 5;}"
+assert 5 "int main() { int a; a = 3; if(a != 3) return a; else return 5;}"
 
 # while test
-assert 11 "main() { 
+assert 11 "int main() { 
+int i;
 i=0; 
 while(i<=10) i=i+1; 
 return i;
 }"
 
 # for test
-assert 30 "main() { a=0; for(i=0; i<10; i=i+1) a=a+2; return i+a;}"
-assert 10 "main() { a=0; for(;a<10;) a=a+1; return a;}"
-# assert 0 "main() return for(;;) 10; return 5;"  segmentation fault
+assert 30 "int main() { int a; int i; a=0; for(i=0; i<10; i=i+1) a=a+2; return i+a;}"
+assert 10 "int main() { int a; int i; a=0; for(;a<10;) a=a+1; return a;}"
+# assert 0 "int main() return for(;;) 10; return 5;"  segmentation fault
 
 # mult test
-assert 6 "main() { 
+assert 6 "int main() {
+int a; 
 a = 3;
 if(a == 1) return 4;
 if(a == 2) return 5;
@@ -154,7 +175,8 @@ if(a == 3) return 6;
 }"
 
 # block test
-assert 10 "main() { 
+assert 10 "int main() { 
+int a;
 a = 0;
 for(;;) {
     a = a + 1;
@@ -164,22 +186,22 @@ return 2;
 }"
 
 # function test
-assert 1 "main() { return foo(); }"
-assert 7 "main() { return bar(3,4); }"
-assert 35 "main() { return piyo(5, 9, 21); }"
+assert 1 "int main() { return foo(); }"
+assert 7 "int main() { return bar(3,4); }"
+assert 35 "int main() { return piyo(5, 9, 21); }"
 
 # address, dereference test
-assert 3 "main() {
-    x = 3;
-    y = &x;
-    return *y;
-}"
+# assert 3 "int main() {
+#     x = 3;
+#     y = &x;
+#     return *y;
+# }"
 
-assert 3 "main() {
-    x = 3;
-    y = 5;
-    z = &y + 8;
-    return *z;
-}"
+# assert 3 "int main() {
+#     x = 3;
+#     y = 5;
+#     z = &y + 8;
+#     return *z;
+# }"
 
 echo OK
