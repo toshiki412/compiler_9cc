@@ -20,6 +20,7 @@ TK_IF,          //if
 TK_ELSE,        //else
 TK_FOR,         //for
 TK_WHILE,       //while
+TK_TYPE,       //int型
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
@@ -126,13 +127,14 @@ Node *new_node_num(int val);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 // program    = func*
-// func       = ident "(" ident* )" stmt
+// func       = "int" ident "(" ("int" ident ("," "int" ident)* )? ")" stmt
 // stmt       = expr ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";"expr? ")" stmt
+//            | "int" ident ";"
 //            | "{" stmt* "}" 
 // expr       = assign
 // assign     = equality ("=" assign)?
@@ -160,6 +162,7 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-Node* variable(Token *tok);
+Node *define_variable(Token *tok);
+Node *variable(Token *tok);
 void gen_lval(Node *node);
 void gen(Node *node);

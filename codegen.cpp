@@ -133,10 +133,18 @@ Node *stmt(){
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_RETURN;
         node->lhs = expr();
-    }else{
-        node = expr();
+        expect(";");
+        return node;
     }
 
+    if(consume_kind(TK_TYPE)){
+        Token *tok = consume_kind(TK_IDENT);
+        node = define_variable(tok);
+        expect(";");
+        return node;
+    }
+
+    node = expr();
     expect(";");
     return node;
 }
@@ -262,29 +270,45 @@ Node *primary() {
     return new_node_num(expect_number());
 }
 
-Node* variable(Token *tok){
+Node *define_variable(Token *tok){
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->kind = ND_LVAR;
 
     LVar *lvar = find_lvar(tok);
-    if(lvar){
-        node->offset = lvar->offset;
-    }else{
-        lvar = static_cast<Lvar*>(calloc(1,sizeof(LVar)));
-        lvar->next = locals[currentFunc];
-        lvar->name = tok->str;
-        lvar->len = tok->len;
-        if(locals[currentFunc] == NULL){
-            lvar->offset = 8;
-        }else{
-            lvar->offset = locals[currentFunc]->offset + 8;
-        }
-        node->offset = lvar->offset;
-        locals[currentFunc] = lvar;
+    if(lvar != NULL){
         char name[100] = {0};
         memcpy(name, tok->str, tok->len);
-        fprintf(stderr, "*NEW VARIABLE* %s\n", name);
+        error("redefined variable: %s", name);
     }
+    lvar = static_cast<Lvar*>(calloc(1,sizeof(LVar)));
+    lvar->next = locals[currentFunc];
+    lvar->name = tok->str;
+    lvar->len = tok->len;
+    if(locals[currentFunc] == NULL){
+        lvar->offset = 8;
+    }else{
+        lvar->offset = locals[currentFunc]->offset + 8;
+    }
+    node->offset = lvar->offset;
+    locals[currentFunc] = lvar;
+    char name[100] = {0};
+    memcpy(name, tok->str, tok->len);
+    fprintf(stderr, "*NEW VARIABLE* %s\n", name);
+    return node;
+}
+
+
+Node *variable(Token *tok){
+    Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->kind = ND_LVAR;
+
+    LVar *lvar = find_lvar(tok);
+    if(lvar == NULL){
+        char name[100] = {0};
+        memcpy(name, tok->str, tok->len);
+        error("undefined variable: %s", name);
+    }
+    node->offset = lvar->offset;
 
     return node;
 }
