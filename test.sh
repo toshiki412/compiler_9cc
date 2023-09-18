@@ -20,6 +20,9 @@ assert(){
     fi
 }
 
+# int test
+assert 2 "main() { int x; x = 2; return x;}"
+
 # value test
 assert 3 "main() { return 3;}"
 assert 1 "main() return 1;"
