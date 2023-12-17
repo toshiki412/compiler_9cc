@@ -279,25 +279,25 @@ Node *primary() {
 
 Node *define_variable(Token *tok){
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->kind = ND_LVAR;
+    node->kind = ND_LOCAL_VARIABLE;
 
-    LVar *lvar = find_lvar(tok);
-    if(lvar != NULL){
+    LocalVariable *local_variable = find_local_variable(tok);
+    if(local_variable != NULL){
         char name[100] = {0};
         memcpy(name, tok->str, tok->len);
         error("redefined variable: %s", name);
     }
-    lvar = static_cast<Lvar*>(calloc(1,sizeof(LVar)));
-    lvar->next = locals[currentFunc];
-    lvar->name = tok->str;
-    lvar->len = tok->len;
+    local_variable = static_cast<LocalVariable*>(calloc(1,sizeof(LocalVariable)));
+    local_variable->next = locals[currentFunc];
+    local_variable->name = tok->str;
+    local_variable->len = tok->len;
     if(locals[currentFunc] == NULL){
-        lvar->offset = 8;
+        local_variable->offset = 8;
     }else{
-        lvar->offset = locals[currentFunc]->offset + 8;
+        local_variable->offset = locals[currentFunc]->offset + 8;
     }
-    node->offset = lvar->offset;
-    locals[currentFunc] = lvar;
+    node->offset = local_variable->offset;
+    locals[currentFunc] = local_variable;
     char name[100] = {0};
     memcpy(name, tok->str, tok->len);
     fprintf(stderr, "*NEW VARIABLE* %s\n", name);
@@ -307,22 +307,22 @@ Node *define_variable(Token *tok){
 
 Node *variable(Token *tok){
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->kind = ND_LVAR;
+    node->kind = ND_LOCAL_VARIABLE;
 
-    LVar *lvar = find_lvar(tok);
-    if(lvar == NULL){
+    LocalVariable *local_variable = find_local_variable(tok);
+    if(local_variable == NULL){
         char name[100] = {0};
         memcpy(name, tok->str, tok->len);
         error("undefined variable: %s", name);
     }
-    node->offset = lvar->offset;
+    node->offset = local_variable->offset;
 
     return node;
 }
 
-void gen_lval(Node *node){
-    if(node->kind != ND_LVAR){
-        error("not ND_LVAR");
+void gen_left_value(Node *node){
+    if(node->kind != ND_LOCAL_VARIABLE){
+        error("not ND_LOCAL_VARIABLE");
     }
 
     printf("    mov rax, rbp\n");
@@ -342,7 +342,7 @@ void gen(Node *node){
 
     switch (node->kind){
     case ND_ADDR:
-        gen_lval(node->lhs);
+        gen_left_value(node->lhs);
         return;
     case ND_DEREF:
         gen(node->lhs);
@@ -464,14 +464,14 @@ void gen(Node *node){
     case ND_NUM:
         printf("    push %d\n", node->val);
         return;
-    case ND_LVAR:
-        gen_lval(node);
+    case ND_LOCAL_VARIABLE:
+        gen_left_value(node);
         printf("    pop rax\n");
         printf("    mov rax, [rax]\n");
         printf("    push rax\n");
         return;
     case ND_ASSIGN:
-        gen_lval(node->lhs);
+        gen_left_value(node->lhs);
         gen(node->rhs);
         printf("    pop rdi\n");
         printf("    pop rax\n");

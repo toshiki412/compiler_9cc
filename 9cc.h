@@ -22,7 +22,6 @@ TK_TYPE,       //int型
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
-
 //トークン型
 typedef struct Token Token;
 struct Token{
@@ -33,9 +32,9 @@ struct Token{
     int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
-typedef struct LVar Lvar;
-struct LVar{
-    Lvar *next;
+typedef struct LocalVariable LocalVariable;
+struct LocalVariable{
+    LocalVariable *next;
     char *name;
     int len;
     int offset;
@@ -47,7 +46,7 @@ extern Token *token;
 // 入力プログラム
 extern char *user_input;
 
-extern LVar *locals[];
+extern LocalVariable *locals[];
 extern int currentFunc;
 
 void error_at(char *loc, const char *fmt, ...);
@@ -63,7 +62,7 @@ int expect_number();
 bool at_eof();
 bool startswith(char *p, const char *q);
 
-LVar *find_lvar(Token *tok);
+LocalVariable *find_local_variable(Token *tok);
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) ;
 
@@ -82,7 +81,7 @@ typedef enum{
     ND_LT,          // <
     ND_LE,          // <=
     ND_ASSIGN,      // =
-    ND_LVAR,        // ローカル変数
+    ND_LOCAL_VARIABLE,// ローカル変数
     ND_NUM,         // 整数
     ND_RETURN,
     ND_IF,
@@ -109,7 +108,7 @@ struct Node{
     char *funcName; //kindがND_FUNCのとき使う
     Node **args;    //kindがND_FUNC_DEFのとき使う
     int val;        //kindがND_NUMのとき使う
-    int offset;     //kindがND_LVARのとき使う
+    int offset;     //kindがND_LocalVariableのとき使う
 };
 
 extern Node *code[];
@@ -119,29 +118,31 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
-// program    = func*
-// func       = "int" ident "(" ("int" ident ("," "int" ident)* )? ")" stmt
-// stmt       = expr ";"
-//            | "{" stmt* "}"
-//            | "return" expr ";"
-//            | "if" "(" expr ")" stmt ("else" stmt)?
-//            | "while" "(" expr ")" stmt
-//            | "for" "(" expr? ";" expr? ";"expr? ")" stmt
-//            | "int" ident ";"
-//            | "{" stmt* "}" 
-// expr       = assign
-// assign     = equality ("=" assign)?
-// equality   = relational ("==" relational | "!=" relational)*
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-// add        = mul ("+" mul | "-" mul)*
-// mul        = unary ("*" unary | "/" unary)*
-// unary      = "+"? primary
-//            | "-"? primary
-//            | "*" primary
-//            | "&" primary
-// primary    = num 
-//              | ident ( "(" expr* ")")? 
-//              | "(" expr ")"
+/*
+program    = func*
+func       = "int" ident "(" ("int" ident ("," "int" ident)* )? ")" stmt
+stmt       = expr ";"
+           | "{" stmt* "}"
+           | "return" expr ";"
+           | "if" "(" expr ")" stmt ("else" stmt)?
+           | "while" "(" expr ")" stmt
+           | "for" "(" expr? ";" expr? ";"expr? ")" stmt
+           | "int" ident ";"
+           | "{" stmt* "}" 
+expr       = assign
+assign     = equality ("=" assign)?
+equality   = relational ("==" relational | "!=" relational)*
+relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+add        = mul ("+" mul | "-" mul)*
+mul        = unary ("*" unary | "/" unary)*
+unary      = "+"? primary
+           | "-"? primary
+           | "*" primary
+           | "&" primary
+primary    = num 
+             | ident ( "(" expr* ")")? 
+             | "(" expr ")"
+*/
 
 void program();
 Node *func();
@@ -157,5 +158,5 @@ Node *primary();
 
 Node *define_variable(Token *tok);
 Node *variable(Token *tok);
-void gen_lval(Node *node);
+void gen_left_value(Node *node);
 void gen(Node *node);
