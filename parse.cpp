@@ -94,7 +94,7 @@ int is_alnum(char c){
            (c == '_');
 }
 
-// 新しいトークンを作成してcurに繋げる
+// curの次に繋げる新しいトークンを作成する
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     //新しいToken構造体のメモリ(RAM)を動的に割り当てる。Token構造体のバイトサイズ×1のバイト数を確保。
     Token *tok = static_cast<Token*>(calloc(1, sizeof(Token)));

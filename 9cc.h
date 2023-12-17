@@ -1,5 +1,4 @@
 //ヘッダファイル
-
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -9,7 +8,6 @@
 
 
 //tokenize
-
 //トークンの種類
 typedef enum{
 TK_RESERVED,    //記号
@@ -25,19 +23,17 @@ TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
 
-typedef struct Token Token;
-
 //トークン型
+typedef struct Token Token;
 struct Token{
     TokenKind kind; //トークンの型
     Token *next;    //次の入力トークン
     int val;        //kindがTK_NUMのとき、その数値
     char *str;      //トークン文字列
-    int len;        //トークンの長さ
+    int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
 typedef struct LVar Lvar;
-
 struct LVar{
     Lvar *next;
     char *name;
@@ -75,7 +71,6 @@ Token *tokenize();
 
 
 //codegen
-
 //抽象構文木の種類
 typedef enum{
     ND_ADD,         // +
@@ -104,10 +99,8 @@ typedef enum{
 } NodeKind;
 
 
-typedef struct Node Node;
-
-
 //抽象構文木のノードの型
+typedef struct Node Node;
 struct Node{
     NodeKind kind;
     Node *lhs;      //左辺
