@@ -7,7 +7,7 @@ Token *token;
 char *user_input;
 
 //ローカル変数
-Lvar *locals[100];
+LocalVariable *locals[100];
 int currentFunc = 0;
 
 //エラーを報告するための関数
@@ -108,7 +108,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 
 typedef struct ReservedWord ReservedWord;
 struct ReservedWord{
-    char *word;
+    const char *word;
     TokenKind kind;
 };
 
@@ -155,7 +155,7 @@ Token *tokenize() {
 
         bool found = false;
         for(int i = 0; reservedWords[i].kind != TK_EOF; i++){
-            char *w = reservedWords[i].word;
+            const char *w = reservedWords[i].word;
             int wordLen = strlen(w);
             TokenKind kind = reservedWords[i].kind;
 
@@ -200,8 +200,8 @@ Token *tokenize() {
     return head.next;
 }
 
-LVar *find_lvar(Token *tok){
-    for(LVar *var = locals[currentFunc]; var; var = var->next){
+LocalVariable *find_local_variable(Token *tok){
+    for(LocalVariable *var = locals[currentFunc]; var; var = var->next){
         if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
             return var;
         }
