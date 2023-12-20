@@ -18,7 +18,7 @@ TK_IF,          //if
 TK_ELSE,        //else
 TK_FOR,         //for
 TK_WHILE,       //while
-TK_TYPE,       //int型
+TK_TYPE,        //型
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
@@ -32,12 +32,13 @@ struct Token{
     int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
+// 複数文字のローカル変数を対応
 typedef struct LocalVariable LocalVariable;
 struct LocalVariable{
-    LocalVariable *next;
-    char *name;
-    int len;
-    int offset;
+    LocalVariable *next; // 次の変数かNULL
+    char *name; // 変数の名前
+    int len; // 名前の長さ
+    int offset; // RBPからのオフセット
 };
 
 //現在着目しているトークン
@@ -46,6 +47,8 @@ extern Token *token;
 // 入力プログラム
 extern char *user_input;
 
+// ローカル変数
+// localsを辿って変数名を見ていくことで既存の変数かどうかがわかる
 extern LocalVariable *locals[];
 extern int currentFunc;
 

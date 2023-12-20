@@ -87,7 +87,7 @@ bool startswith(char *p, const char *q){
     return memcmp(p, q, strlen(q)) == 0;
 }
 
-int is_alnum(char c){
+bool is_alnum(char c){
     return ('a' <= c && c <= 'z') ||
            ('A' <= c && c <= 'Z') ||
            ('0' <= c && c <= '9') ||
@@ -159,6 +159,8 @@ Token *tokenize() {
             int wordLen = strlen(w);
             TokenKind kind = reservedWords[i].kind;
 
+            // pが予約語wまで読んで、かつwの次の文字がアルファベットでない場合
+            // w=returnのとき、returnxのようになっていないかを確認
             if(startswith(p, w) && !is_alnum(p[wordLen])){
                 cur = new_token(kind, cur, p, wordLen);
                 p += wordLen;
@@ -173,6 +175,7 @@ Token *tokenize() {
 
         if ('a' <= *p && *p <= 'z'){
             char *c = p;
+            // 複数文字の変数名を対応
             while(is_alnum(*c)){
                 c++;
             }
@@ -200,6 +203,7 @@ Token *tokenize() {
     return head.next;
 }
 
+// ローカル変数を名前で検索する。見つからなかった場合はNULLを返す。
 LocalVariable *find_local_variable(Token *tok){
     for(LocalVariable *var = locals[currentFunc]; var; var = var->next){
         if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
