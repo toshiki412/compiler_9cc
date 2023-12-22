@@ -109,7 +109,7 @@ struct Node{
     Node *rhs;      //右辺
     Node **block;   //kindがND_BLOCKのとき使う ブロックに含まれる式を持つベクタ
     char *funcName; //kindがND_FUNCのとき使う
-    Node **args;    //kindがND_FUNC_DEFのとき使う
+    Node **funcArgs;    //kindがND_FUNC_DEFのとき使う
     int val;        //kindがND_NUMのとき使う
     int offset;     //kindがND_LocalVariableのとき使う
 };
