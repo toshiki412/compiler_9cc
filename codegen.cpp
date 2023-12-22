@@ -44,8 +44,8 @@ Node *func(){
     node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->kind = ND_FUNC_DEF;
     node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
-    node->args = static_cast<Node**>(calloc(10,sizeof(Node*))); //配列の長さを作る
     memcpy(node->funcName, tok->str, tok->len);
+    node->funcArgs = static_cast<Node**>(calloc(10,sizeof(Node*))); //引数10個分の配列の長さを作る
     expect("(");
     for(int i = 0; !consume(")"); i++){
         if(!consume_kind(TK_TYPE)){
@@ -54,7 +54,7 @@ Node *func(){
 
         Token *tok = consume_kind(TK_IDENT);
         if(tok != NULL){
-            node->args[i] = define_variable(tok);
+            node->funcArgs[i] = define_variable(tok);
         }
 
         if(consume(")")){
@@ -258,7 +258,7 @@ Node *primary() {
             node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
             memcpy(node->funcName, tok->str, tok->len);
 
-            //引数
+            //引数 とりあえず10個まで
             node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
             for(int i = 0; !consume(")"); i++){
                 node->block[i] = expr();
@@ -301,7 +301,7 @@ Node *define_variable(Token *tok){
     locals[currentFunc] = local_variable;
     char name[100] = {0};
     memcpy(name, tok->str, tok->len);
-    fprintf(stderr, "*NEW VARIABLE* %s\n", name);
+    // fprintf(stderr, "*NEW VARIABLE* %s\n", name);
     return node;
 }
 
@@ -332,14 +332,16 @@ void gen_left_value(Node *node){
 }
 
 int genCounter = 0; //genが呼ばれるたびにインクリメントされる
-const char *argRegs[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"};
+
+//x86-64のABIに従い、引数はとりあえず6つまで
+const char *argRegisters[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"}; 
 
 //スタックマシン
 void gen(Node *node){
     if(!node) return;
     genCounter += 1;
     int labelId = genCounter;
-    int argCount = 0;
+    int functionArgNum = 0;
 
     switch (node->kind){
     case ND_ADDR:
@@ -357,15 +359,20 @@ void gen(Node *node){
         //プロローグ
         printf("    push rbp\n");
         printf("    mov rbp, rsp\n");
+
         //引数の値をスタックに積む
-        for(int i = 0; node->args[i]; i++){
-            printf("    push %s\n", argRegs[i]);
-            argCount++;
+        for(int i = 0; node->funcArgs[i]; i++){
+            printf("    push %s\n", argRegisters[i]);
+            functionArgNum++;
         }
-        //引数の数をのぞいた変数の数だけrspをずらして、変数領域を確保する。
+        //引数の数を除いた変数の数だけrspをずらして、変数領域を確保する。
         if(locals[currentFunc]){
+            // 全体のずらすべき数
             int offset = locals[currentFunc][0].offset;
-            offset -= argCount * 8;
+
+            // 引数の数を除いた数
+            offset -= functionArgNum * 8;
+            
             printf("    sub rsp, %d\n", offset);
         }
 
@@ -380,28 +387,28 @@ void gen(Node *node){
     case ND_FUNC_CALL:
         for(int i = 0; node->block[i]; i++){
             gen(node->block[i]);
-            argCount++;
+            functionArgNum++;
         }
 
-        //引数
-        for(int i = argCount - 1; i >= 0; i--){
-            printf("    pop %s\n", argRegs[i]);
+        //スタックに積んだ引数の値を取り出す
+        for(int i = functionArgNum - 1; i >= 0; i--){
+            printf("    pop %s\n", argRegisters[i]);
         }
         
         //関数呼び出し
         printf("    mov rax, rsp\n");
-        printf("    and rax, 15\n"); //下位４bitをマスクする
-        printf("    jnz .L.call.%03d\n", labelId);
+        printf("    and rax, 15\n");                //下位４bitをマスクする rspが16の倍数かどうかをチェックする
+        printf("    jnz .L.call.%03d\n", labelId);  //16の倍数じゃないならばジャンプ
         printf("    mov rax, 0\n");
-        printf("    call %s\n", node->funcName);
+        printf("    call %s\n", node->funcName);    //関数呼び出し
         printf("    jmp .L.end.%03d\n", labelId);
         printf(".L.call.%03d:\n", labelId);
-        printf("    sub rsp, 8\n");
+        printf("    sub rsp, 8\n");                 // rspを16の倍数にするために8バイト分ずらす
         printf("    mov rax, 0\n");
-        printf("    call %s\n", node->funcName);
-        printf("    add rsp, 8\n");
+        printf("    call %s\n", node->funcName);    //関数呼び出し
+        printf("    add rsp, 8\n");                 // 8バイトずらしたrspを元に戻す
         printf(".L.end.%03d:\n", labelId);
-        printf("    push rax\n"); //関数からリターンしたときにraxに入っている値が関数の返り値という約束
+        printf("    push rax\n");                   //関数からリターンしたときにraxに入っている値が関数の返り値という約束
 
         return;
     case ND_BLOCK:
