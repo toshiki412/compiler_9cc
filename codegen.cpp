@@ -22,6 +22,7 @@ Node *new_node_num(int val){
 //100行までしか対応していない
 Node *code[100];
 
+// 9cc.hに構文あり
 void program(){
     int i = 0;
     while(!at_eof()){
@@ -74,7 +75,7 @@ Node *stmt(){
         //100行までしか対応していない
         node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
         for(int i = 0; !consume("}"); i++){
-            node->block[i] = stmt();
+            node->block[i] = stmt(); // {}内にあるstmtを追加
         }
         return node;
     }
@@ -330,14 +331,14 @@ void gen_left_value(Node *node){
     printf("    push rax\n");
 }
 
-int genCounter = 0;
+int genCounter = 0; //genが呼ばれるたびにインクリメントされる
 const char *argRegs[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"};
 
 //スタックマシン
 void gen(Node *node){
     if(!node) return;
     genCounter += 1;
-    int id = genCounter;
+    int labelId = genCounter;
     int argCount = 0;
 
     switch (node->kind){
@@ -390,20 +391,21 @@ void gen(Node *node){
         //関数呼び出し
         printf("    mov rax, rsp\n");
         printf("    and rax, 15\n"); //下位４bitをマスクする
-        printf("    jnz .L.call.%03d\n", id);
+        printf("    jnz .L.call.%03d\n", labelId);
         printf("    mov rax, 0\n");
         printf("    call %s\n", node->funcName);
-        printf("    jmp .L.end.%03d\n", id);
-        printf(".L.call.%03d:\n", id);
+        printf("    jmp .L.end.%03d\n", labelId);
+        printf(".L.call.%03d:\n", labelId);
         printf("    sub rsp, 8\n");
         printf("    mov rax, 0\n");
         printf("    call %s\n", node->funcName);
         printf("    add rsp, 8\n");
-        printf(".L.end.%03d:\n", id);
+        printf(".L.end.%03d:\n", labelId);
         printf("    push rax\n"); //関数からリターンしたときにraxに入っている値が関数の返り値という約束
 
         return;
     case ND_BLOCK:
+        // ND_BLOCKに含まれるステートメントのコードを順番に生成する
         for(int i = 0; node->block[i]; i++){
             gen(node->block[i]);
             // printf("    pop rax\n");
@@ -412,47 +414,47 @@ void gen(Node *node){
     case ND_FOR:
         //for(A;B;C) D;
         gen(node->lhs->lhs);        //Aをコンパイルしたコード
-        printf(".Lbegin%03d:\n", id);
+        printf(".Lbegin%03d:\n", labelId);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if(!node->lhs->rhs){        //無限ループの対応
             printf("    push 1\n");
         }
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lend%03d\n", id);
+        printf("    je .Lend%03d\n", labelId);
         gen(node->rhs->rhs);        //Dをコンパイルしたコード
         gen(node->rhs->lhs);        //Cをコンパイルしたコード 
-        printf("    jmp .Lbegin%03d\n", id);
-        printf(".Lend%03d:\n", id);
+        printf("    jmp .Lbegin%03d\n", labelId);
+        printf(".Lend%03d:\n", labelId);
         return;
     case ND_WHILE:
         //while(A) B;
-        printf(".Lbegin%03d:\n", id);
+        printf(".Lbegin%03d:\n", labelId);
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lend%03d\n", id);
+        printf("    je .Lend%03d\n", labelId);
         gen(node->rhs);             //Bをコンパイルしたコード
-        printf("    jmp .Lbegin%03d\n", id);
-        printf(".Lend%03d:\n", id);
+        printf("    jmp .Lbegin%03d\n", labelId);
+        printf(".Lend%03d:\n", labelId);
         return;
     case ND_IF:
         //if(A) B; else C;
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lelse%03d\n", id);
+        printf("    je .Lelse%03d\n", labelId);
         if(node->rhs->kind == ND_ELSE){
             gen(node->rhs->lhs);    //Bをコンパイルしたコード
         }else{
             gen(node->rhs);         //Bをコンパイルしたコード
         }
-        printf("    jmp .Lend%03d\n", id);
-        printf(".Lelse%03d:\n", id);
+        printf("    jmp .Lend%03d\n", labelId);
+        printf(".Lelse%03d:\n", labelId);
         if(node->rhs->kind == ND_ELSE){
             gen(node->rhs->rhs);    //Cをコンパイルしたコード
         }
-        printf(".Lend%03d:\n", id);
+        printf(".Lend%03d:\n", labelId);
         return;
     case ND_RETURN:
         gen(node->lhs);
