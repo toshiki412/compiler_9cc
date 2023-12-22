@@ -107,7 +107,7 @@ struct Node{
     NodeKind kind;
     Node *lhs;      //左辺
     Node *rhs;      //右辺
-    Node **block;   //kindがND_BLOCKのとき使う
+    Node **block;   //kindがND_BLOCKのとき使う ブロックに含まれる式を持つベクタ
     char *funcName; //kindがND_FUNCのとき使う
     Node **args;    //kindがND_FUNC_DEFのとき使う
     int val;        //kindがND_NUMのとき使う

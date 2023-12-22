@@ -125,45 +125,45 @@ ReservedWord reservedWords[] = {
 
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize() {
-    char *p = user_input;
+    char *input_char_pointer = user_input;
     Token head; //ダミーノード
     head.next = NULL;
     Token *cur = &head;
 
     // ex)12 + 31 - 15
 
-    while (*p) {
+    while (*input_char_pointer) {
         // 空白文字をスキップ
-        if (isspace(*p)) {
-        p++;
+        if (isspace(*input_char_pointer)) {
+        input_char_pointer++;
         continue;
         }
 
-        if (startswith(p, "==") || 
-            startswith(p, "!=") ||
-            startswith(p, "<=") ||
-            startswith(p, ">=")){
-                cur = new_token(TK_RESERVED, cur, p, 2);
-                p += 2;
+        if (startswith(input_char_pointer, "==") || 
+            startswith(input_char_pointer, "!=") ||
+            startswith(input_char_pointer, "<=") ||
+            startswith(input_char_pointer, ">=")){
+                cur = new_token(TK_RESERVED, cur, input_char_pointer, 2);
+                input_char_pointer += 2;
                 continue;
         }
 
-        if (strchr("+-*/()<>=;{},&", *p)) {
-            cur = new_token(TK_RESERVED, cur, p++, 1);
+        if (strchr("+-*/()<>=;{},&", *input_char_pointer)) {
+            cur = new_token(TK_RESERVED, cur, input_char_pointer++, 1);
             continue;
         }
 
         bool found = false;
         for(int i = 0; reservedWords[i].kind != TK_EOF; i++){
-            const char *w = reservedWords[i].word;
-            int wordLen = strlen(w);
+            const char *word = reservedWords[i].word;
+            int wordLen = strlen(word);
             TokenKind kind = reservedWords[i].kind;
 
             // pが予約語wまで読んで、かつwの次の文字がアルファベットでない場合
             // w=returnのとき、returnxのようになっていないかを確認
-            if(startswith(p, w) && !is_alnum(p[wordLen])){
-                cur = new_token(kind, cur, p, wordLen);
-                p += wordLen;
+            if(startswith(input_char_pointer, word) && !is_alnum(input_char_pointer[wordLen])){
+                cur = new_token(kind, cur, input_char_pointer, wordLen);
+                input_char_pointer += wordLen;
                 found = true;
                 break;
             }
@@ -173,30 +173,30 @@ Token *tokenize() {
             continue;
         }
 
-        if ('a' <= *p && *p <= 'z'){
-            char *c = p;
+        if ('a' <= *input_char_pointer && *input_char_pointer <= 'z'){
+            char *c = input_char_pointer;
             // 複数文字の変数名を対応
             while(is_alnum(*c)){
                 c++;
             }
-            int len = c - p;
-            cur = new_token(TK_IDENT, cur, p, len);
-            p = c;
+            int len = c - input_char_pointer;
+            cur = new_token(TK_IDENT, cur, input_char_pointer, len);
+            input_char_pointer = c;
             continue;
         }
 
-        if (isdigit(*p)) {
-            cur = new_token(TK_NUM, cur, p, 0);
-            char *q = p;
-            cur->val = strtol(p, &p, 10); //文字列からlong型（整数型）に変換
-            cur->len = p - q;
+        if (isdigit(*input_char_pointer)) {
+            cur = new_token(TK_NUM, cur, input_char_pointer, 0);
+            char *p = input_char_pointer;
+            cur->val = strtol(input_char_pointer, &input_char_pointer, 10); //文字列からlong型（整数型）に変換
+            cur->len = input_char_pointer - p;
             continue;
         }
 
-        error_at(p, "Cannot tokenize");
+        error_at(input_char_pointer, "Cannot tokenize");
     }
 
-    new_token(TK_EOF, cur, p, 0);
+    new_token(TK_EOF, cur, input_char_pointer, 0);
 
     // ex )12 + 31 - 15の場合、tokenは以下のように構成されている
     // &head -> TK_NUM("12") -> TK_RESERVED("+") -> TK_NUM("31") -> TK_RESERVED("-") -> TK_NUM("15") -> TK_EOF
