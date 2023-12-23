@@ -255,6 +255,11 @@ Node *unary() {
     if (consume("&")) {
         return new_binary(ND_ADDR, unary(), NULL);
     }
+    if (consume_kind(TK_SIZEOF)) {
+        Node *node = unary();
+        int size = node->type && node->type->ty == Type::PTR ? 8 : 4;
+        return new_node_num(size);
+    }
     return primary();
 }
 

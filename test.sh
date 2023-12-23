@@ -20,6 +20,37 @@ assert(){
     fi
 }
 
+
+# sizeof test
+assert 4 "int main() { 
+    int x;
+    return sizeof(x); 
+}"
+
+assert 8 "int main() { 
+    int *x;
+    return sizeof(x); 
+}"
+
+assert 4 "int main() { 
+    int x;
+    return sizeof(x+1); 
+}"
+
+# assert 8 "int main() { 
+#     int *x;
+#     return sizeof(x+2); 
+# }"
+
+assert 4 "int main() { 
+    int *x;
+    return sizeof(*x); 
+}"
+
+assert 4 "int main() { 
+    return sizeof(1); 
+}"
+
 # pointer test
 assert 3 "int main() {
     int x;
