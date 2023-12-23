@@ -1,215 +1,383 @@
 #include "9cc.h"
 
-//現在着目しているトークン
-Token *token;
-
-// 入力プログラム
-char *user_input;
-
-//ローカル変数
-LocalVariable *locals[100];
-int currentFunc = 0;
-
-//エラーを報告するための関数
-//locはエラーが発生した位置
-void error_at(char *loc, const char *fmt, ...) {
-    va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
-    va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
-
-    //posはlocがuser_inputからどれだけ離れているかを表すオフセット
-    int pos = loc - user_input;
-    fprintf(stderr, "%s\n", user_input);
-    fprintf(stderr, "%*s", pos, "");
-    fprintf(stderr, "^ ");
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
-    //printfの出力先は標準出力、fprintfの出力先は指定したファイルストリーム、vfprintfは可変引数を与えている
+Node *new_node(NodeKind kind) {
+    Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
+    node->kind = kind;
+    return node;
 }
 
-void error(const char *fmt, ...) {
-    va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
-    va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
-
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+    Node *node = new_node(kind);
+    node->lhs = lhs;
+    node->rhs = rhs; 
+    return node;
 }
 
-//次のトークンが期待している記号のときはトークンを一つ進めて真を返す
-//それ以外は偽を返す
-bool consume(const char *op) {
-    if ( token->kind != TK_RESERVED || 
-        strlen(op) != token->len ||
-        memcmp(token->str, op, token->len)) {
-            return false;
+Node *new_node_num(int val) {
+    Node *node = new_node(ND_NUM);
+    node->val = val;
+    return node;
+}
+
+//100行までしか対応していない
+Node *code[100];
+
+// 9cc.hに構文あり
+void program() {
+    int i = 0;
+    while (!at_eof()) {
+        code[i++] = func();
     }
-    token = token->next;
-    return true;
+    code[i] = NULL;
 }
 
-Token *consume_kind(TokenKind kind) {
-    if (token->kind != kind) {
-        return NULL;
+Node *func() {
+    currentFunc++;
+    Node *node;
+
+    if (!consume_kind(TK_TYPE)) {
+        error("function return type not found.");
     }
-    Token* tok = token;
-    token = token->next;
-    return tok;
-}
 
-//次のトークンが期待している記号のときはトークンを一つ進める
-//それ以外はエラーを報告する
-void expect(const char *op) {
-    if ( token->kind != TK_RESERVED || 
-        strlen(op) != token->len ||
-        memcmp(token->str, op, token->len)) {
-            error_at(token->str, "Expected \"%s\"", op);
+    Token *tok = consume_kind(TK_IDENT);
+    if (tok == NULL) {
+        error("not function!");
     }
-    token = token->next;
-}
 
-//次のトークンが数値のとき、トークンを進めてその数値を返す
-//それ以外はエラーを報告する
-int expect_number() {
-    if (token->kind != TK_NUM) {
-        error_at(token->str,"Not a number");
-    }
-    int val = token->val;
-    token = token->next;
-    return val;
-}
-
-bool at_eof() {
-    return token->kind == TK_EOF;
-}
-
-bool startswith(char *p, const char *q) {
-    return memcmp(p, q, strlen(q)) == 0;
-}
-
-bool is_alnum(char c) {
-    return ('a' <= c && c <= 'z') ||
-           ('A' <= c && c <= 'Z') ||
-           ('0' <= c && c <= '9') ||
-           (c == '_');
-}
-
-// curの次に繋げる新しいトークンを作成する
-Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
-    //新しいToken構造体のメモリ(RAM)を動的に割り当てる。Token構造体のバイトサイズ×1のバイト数を確保。
-    Token *tok = static_cast<Token*>(calloc(1, sizeof(Token)));
-
-    tok->kind = kind;
-    tok->str = str;
-    tok->len = len;
-    cur->next = tok;
-    return tok;
-}
-
-typedef struct ReservedWord ReservedWord;
-struct ReservedWord{
-    const char *word;
-    TokenKind kind;
-};
-
-ReservedWord reservedWords[] = {
-    {"return", TK_RETURN},
-    {"if", TK_IF},
-    {"else", TK_ELSE},
-    {"while", TK_WHILE},
-    {"for", TK_FOR},
-    {"int", TK_TYPE},
-    {"sizeof", TK_SIZEOF},
-    {"", TK_EOF},
-};
-
-
-// 入力文字列pをトークナイズしてそれを返す
-Token *tokenize() {
-    char *input_char_pointer = user_input;
-    Token head; //ダミーノード
-    head.next = NULL;
-    Token *cur = &head;
-
-    // ex)12 + 31 - 15
-
-    while (*input_char_pointer) {
-        // 空白文字をスキップ
-        if (isspace(*input_char_pointer)) {
-        input_char_pointer++;
-        continue;
+    node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->kind = ND_FUNC_DEF;
+    node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
+    memcpy(node->funcName, tok->str, tok->len);
+    node->funcArgs = static_cast<Node**>(calloc(10,sizeof(Node*))); //引数10個分の配列の長さを作る
+    
+    expect("(");
+    for (int i = 0; !consume(")"); i++) {
+        if (!consume_kind(TK_TYPE)) {
+            error("function args type not found.");
         }
 
-        if (startswith(input_char_pointer, "==") || 
-            startswith(input_char_pointer, "!=") ||
-            startswith(input_char_pointer, "<=") ||
-            startswith(input_char_pointer, ">=")) {
-                cur = new_token(TK_RESERVED, cur, input_char_pointer, 2);
-                input_char_pointer += 2;
-                continue;
+        node->funcArgs[i] = define_variable();
+
+        if (consume(")")) {
+            break;
+        }
+        expect(",");
+    }
+
+    node->lhs = stmt();
+    return node;
+}
+
+Node *stmt() {
+    Node *node;
+
+    if (consume("{")) {
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_BLOCK;
+        //100行までしか対応していない
+        node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        for (int i = 0; !consume("}"); i++) {
+            node->block[i] = stmt(); // {}内にあるstmtを追加
+        }
+        return node;
+    }
+
+    if (consume_kind(TK_FOR)) {
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_FOR;
+
+        Node *left = static_cast<Node*>(calloc(1,sizeof(Node)));
+        left->kind = ND_FOR_LEFT;
+        Node *right = static_cast<Node*>(calloc(1,sizeof(Node)));
+        right->kind = ND_FOR_RIGHT;
+
+        if (!consume(";")) {
+            left->lhs = expr();
+            expect(";");
+        }
+        if (!consume(";")) {
+            left->rhs = expr();
+            expect(";");
         }
 
-        if (strchr("+-*/()<>=;{},&[]", *input_char_pointer)) {
-            cur = new_token(TK_RESERVED, cur, input_char_pointer++, 1);
-            continue;
+        if (!consume(")")) {
+            right->lhs = expr();
+            expect(")");
         }
+        right->rhs = stmt();
 
-        bool found = false;
-        for (int i = 0; reservedWords[i].kind != TK_EOF; i++) {
-            const char *word = reservedWords[i].word;
-            int wordLen = strlen(word);
-            TokenKind kind = reservedWords[i].kind;
+        node->lhs = left;
+        node->rhs = right;
+        return node;
+    }
 
-            // pが予約語wまで読んで、かつwの次の文字がアルファベットでない場合
-            // w=returnのとき、returnxのようになっていないかを確認
-            if (startswith(input_char_pointer, word) && !is_alnum(input_char_pointer[wordLen])) {
-                cur = new_token(kind, cur, input_char_pointer, wordLen);
-                input_char_pointer += wordLen;
-                found = true;
-                break;
+    if (consume_kind(TK_WHILE)) {
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_WHILE;
+        node->lhs = expr();
+        expect(")");
+        node->rhs = stmt();
+        return node;
+    }
+
+    if (consume_kind(TK_IF)) {
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_IF;
+        node->lhs = expr();
+        expect(")");
+        node->rhs = stmt();
+        if (consume_kind(TK_ELSE)) {
+            Node *els = static_cast<Node*>(calloc(1,sizeof(Node)));
+            els->kind = ND_ELSE;
+            els->lhs = node->rhs;
+            els->rhs = stmt();
+            node->rhs = els;
+        }
+        return node;
+    }
+
+    if (consume_kind(TK_RETURN)) {
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_RETURN;
+        node->lhs = expr();
+        expect(";");
+        return node;
+    }
+
+    if (consume_kind(TK_TYPE)) {
+        node = define_variable();
+        expect(";");
+        return node;
+    }
+
+    node = expr();
+    expect(";");
+    return node;
+}
+
+Node *expr() {
+    return assign();
+}
+
+Node *assign() {
+    Node *node = equality();
+    if (consume("=")) {
+        node = new_binary(ND_ASSIGN, node, assign());
+    }
+    return node;
+}
+
+Node *equality() {
+    Node *node = relational();
+    for (;;) {
+        if (consume("==")) {
+            node = new_binary(ND_EQ, node, relational());
+        } else if (consume("!=")) {
+            node = new_binary(ND_NE, node, relational());
+        } else {
+            return node;
+        }
+    }
+}
+
+Node *relational() {
+    Node *node = add();
+    for (;;) {
+        if (consume("<")) {
+            node = new_binary(ND_LT, node, add());
+        } else if (consume("<=")) {
+            node = new_binary(ND_LE, node, add());
+        } else if (consume(">")) {
+            node = new_binary(ND_LT, add(), node);
+        } else if (consume(">=")) {
+            node = new_binary(ND_LE, add(), node);
+        } else {
+            return node;
+        }
+    }
+}
+
+Node *add() {
+    Node *node = mul();
+    for (;;) {
+        if (consume("+")) {
+            Node *r = mul();
+
+            // ポインタの演算の場合は、ポインタのサイズ分を足す
+            if (node->type && node->type->ty == Type::PTR) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
+                r = new_binary(ND_MUL, r, new_node_num(n));
             }
-        }
-        
-        if (found) {
-            continue;
-        }
 
-        if ('a' <= *input_char_pointer && *input_char_pointer <= 'z') {
-            char *c = input_char_pointer;
-            // 複数文字の変数名を対応
-            while (is_alnum(*c)) {
-                c++;
+            node = new_binary(ND_ADD, node, r);
+        } else if (consume("-")) {
+            Node *r = mul();
+            
+            // ポインタの演算の場合は、ポインタのサイズ分を引く
+            if (node->type && node->type->ty == Type::PTR) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
+                r = new_binary(ND_MUL, r, new_node_num(n));
             }
-            int len = c - input_char_pointer;
-            cur = new_token(TK_IDENT, cur, input_char_pointer, len);
-            input_char_pointer = c;
-            continue;
-        }
 
-        if (isdigit(*input_char_pointer)) {
-            cur = new_token(TK_NUM, cur, input_char_pointer, 0);
-            char *p = input_char_pointer;
-            cur->val = strtol(input_char_pointer, &input_char_pointer, 10); //文字列からlong型（整数型）に変換
-            cur->len = input_char_pointer - p;
-            continue;
+            node = new_binary(ND_SUB, node, r);
+        } else {
+            return node;
         }
-
-        error_at(input_char_pointer, "Cannot tokenize");
     }
-
-    new_token(TK_EOF, cur, input_char_pointer, 0);
-
-    // ex )12 + 31 - 15の場合、tokenは以下のように構成されている
-    // &head -> TK_NUM("12") -> TK_RESERVED("+") -> TK_NUM("31") -> TK_RESERVED("-") -> TK_NUM("15") -> TK_EOF
-    return head.next;
 }
 
-// ローカル変数を名前で検索する。見つからなかった場合はNULLを返す。
-LocalVariable *find_local_variable(Token *tok) {
-    for (LocalVariable *var = locals[currentFunc]; var; var = var->next) {
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-            return var;
+Node *mul() {
+    Node *node = unary();
+    for (;;) {
+        if (consume("*")) {
+            node = new_binary(ND_MUL, node, unary());
+        } else if (consume("/")) {
+            node = new_binary(ND_DIV, node, unary());
+        } else {
+            return node;
         }
     }
-    return NULL;
+}
+
+Node *unary() {
+    if (consume("+")) {
+        return unary(); //+の場合は無視するということ
+    }
+    if (consume("-")) {
+        return new_binary(ND_SUB, new_node_num(0), unary());
+    }
+    if (consume("*")) {
+        return new_binary(ND_DEREF, unary(), NULL);
+    }
+    if (consume("&")) {
+        return new_binary(ND_ADDR, unary(), NULL);
+    }
+    if (consume_kind(TK_SIZEOF)) {
+        Node *node = unary();
+        int size = node->type && node->type->ty == Type::PTR ? 8 : 4;
+        return new_node_num(size);
+    }
+    return primary();
+}
+
+Node *primary() {
+    // 次のトークンが"("なら、"(" expr ")"のはず
+    if (consume("(")) {
+        Node *node = expr();
+        expect(")");
+        return node;
+    }
+
+    Token *tok = consume_kind(TK_IDENT);
+    if (tok) {
+        if (consume("(")) {
+            //関数呼び出し
+            Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+            node->kind = ND_FUNC_CALL;
+            node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
+            memcpy(node->funcName, tok->str, tok->len);
+
+            //引数 とりあえず10個まで
+            node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
+            for (int i = 0; !consume(")"); i++) {
+                node->block[i] = expr();
+                if (consume(")")) {
+                    break;
+                }
+                expect(",");
+            }
+            return node;
+        }
+
+        //関数呼び出しではない場合、変数。
+        return variable(tok);
+    }
+
+    // そうでなければ数値のはず
+    return new_node_num(expect_number());
+}
+
+// まだ定義されていない変数の定義を行う
+Node *define_variable() {
+    Type *type = static_cast<Type*>(calloc(1,sizeof(Type)));
+    type->ty = Type::INT;
+    type->ptr_to = NULL;
+    while (consume("*")) {
+        Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+        t->ty = Type::PTR;
+        t->ptr_to = type;
+        type = t;
+    }
+
+    Token *tok = consume_kind(TK_IDENT);
+    if (tok == NULL) {
+        error("invalid define variable.");
+    }
+
+    int size = type->ty == Type::PTR ? 8 : 4;
+
+    // 配列かチェック
+    while (consume("[")) {
+        Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+        t->ty = Type::ARRAY;
+        t->ptr_to = type;
+        t->array_size = expect_number();
+        type = t;
+        size *= t->array_size;
+        expect("]");
+    }
+
+    // sizeを8の倍数にする
+    while ((size % 8) != 0) {
+        size += 4;
+    }
+
+    Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->kind = ND_LOCAL_VARIABLE;
+
+    LocalVariable *local_variable = find_local_variable(tok);
+    if (local_variable != NULL) {
+        char name[100] = {0};
+        memcpy(name, tok->str, tok->len);
+        error("redefined variable: %s", name);
+    }
+
+    local_variable = static_cast<LocalVariable*>(calloc(1,sizeof(LocalVariable)));
+    local_variable->next = locals[currentFunc];
+    local_variable->name = tok->str;
+    local_variable->len = tok->len;
+    if (locals[currentFunc] == NULL) {
+        local_variable->offset = 8;
+    } else {
+        local_variable->offset = locals[currentFunc]->offset + size;
+    }
+    local_variable->type = type;
+
+    node->offset = local_variable->offset;
+    node->type = local_variable->type;
+    locals[currentFunc] = local_variable;
+    char name[100] = {0};
+    memcpy(name, tok->str, tok->len);
+    // fprintf(stderr, "*NEW VARIABLE* %s\n", name);
+    return node;
+}
+
+// 定義済みの変数を参照する
+Node *variable(Token *tok) {
+    Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->kind = ND_LOCAL_VARIABLE;
+
+    LocalVariable *local_variable = find_local_variable(tok);
+    if (local_variable == NULL) {
+        char name[100] = {0};
+        memcpy(name, tok->str, tok->len);
+        error("undefined variable: %s", name);
+    }
+
+    node->offset = local_variable->offset;
+    node->type = local_variable->type;
+    return node;
 }
