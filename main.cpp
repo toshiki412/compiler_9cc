@@ -1,7 +1,7 @@
 #include "9cc.h"
 
-int main(int argc, char **argv){
-    if(argc != 2){
+int main(int argc, char **argv) {
+    if (argc != 2) {
         fprintf(stderr, "invalid args\n");
         return 1;
     }
@@ -16,7 +16,7 @@ int main(int argc, char **argv){
     printf(".globl main\n");
 
     currentFunc = 0;
-    for(int i = 0; code[i]; i++){
+    for (int i = 0; code[i]; i++) {
         currentFunc++;
         gen(code[i]);
     }

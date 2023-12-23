@@ -12,7 +12,7 @@ int currentFunc = 0;
 
 //エラーを報告するための関数
 //locはエラーが発生した位置
-void error_at(char *loc, const char *fmt, ...){
+void error_at(char *loc, const char *fmt, ...) {
     va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
     va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
 
@@ -27,7 +27,7 @@ void error_at(char *loc, const char *fmt, ...){
     //printfの出力先は標準出力、fprintfの出力先は指定したファイルストリーム、vfprintfは可変引数を与えている
 }
 
-void error(const char *fmt, ...){
+void error(const char *fmt, ...) {
     va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
     va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
 
@@ -38,18 +38,18 @@ void error(const char *fmt, ...){
 
 //次のトークンが期待している記号のときはトークンを一つ進めて真を返す
 //それ以外は偽を返す
-bool consume(const char *op){
-    if( token->kind != TK_RESERVED || 
+bool consume(const char *op) {
+    if ( token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
-        memcmp(token->str, op, token->len)){
+        memcmp(token->str, op, token->len)) {
             return false;
     }
     token = token->next;
     return true;
 }
 
-Token *consume_kind(TokenKind kind){
-    if(token->kind != kind){
+Token *consume_kind(TokenKind kind) {
+    if (token->kind != kind) {
         return NULL;
     }
     Token* tok = token;
@@ -59,10 +59,10 @@ Token *consume_kind(TokenKind kind){
 
 //次のトークンが期待している記号のときはトークンを一つ進める
 //それ以外はエラーを報告する
-void expect(const char *op){
-    if( token->kind != TK_RESERVED || 
+void expect(const char *op) {
+    if ( token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
-        memcmp(token->str, op, token->len)){
+        memcmp(token->str, op, token->len)) {
             error_at(token->str, "Expected \"%s\"", op);
     }
     token = token->next;
@@ -70,8 +70,8 @@ void expect(const char *op){
 
 //次のトークンが数値のとき、トークンを進めてその数値を返す
 //それ以外はエラーを報告する
-int expect_number(){
-    if(token->kind != TK_NUM){
+int expect_number() {
+    if (token->kind != TK_NUM) {
         error_at(token->str,"Not a number");
     }
     int val = token->val;
@@ -79,15 +79,15 @@ int expect_number(){
     return val;
 }
 
-bool at_eof(){
+bool at_eof() {
     return token->kind == TK_EOF;
 }
 
-bool startswith(char *p, const char *q){
+bool startswith(char *p, const char *q) {
     return memcmp(p, q, strlen(q)) == 0;
 }
 
-bool is_alnum(char c){
+bool is_alnum(char c) {
     return ('a' <= c && c <= 'z') ||
            ('A' <= c && c <= 'Z') ||
            ('0' <= c && c <= '9') ||
@@ -142,7 +142,7 @@ Token *tokenize() {
         if (startswith(input_char_pointer, "==") || 
             startswith(input_char_pointer, "!=") ||
             startswith(input_char_pointer, "<=") ||
-            startswith(input_char_pointer, ">=")){
+            startswith(input_char_pointer, ">=")) {
                 cur = new_token(TK_RESERVED, cur, input_char_pointer, 2);
                 input_char_pointer += 2;
                 continue;
@@ -154,14 +154,14 @@ Token *tokenize() {
         }
 
         bool found = false;
-        for(int i = 0; reservedWords[i].kind != TK_EOF; i++){
+        for (int i = 0; reservedWords[i].kind != TK_EOF; i++) {
             const char *word = reservedWords[i].word;
             int wordLen = strlen(word);
             TokenKind kind = reservedWords[i].kind;
 
             // pが予約語wまで読んで、かつwの次の文字がアルファベットでない場合
             // w=returnのとき、returnxのようになっていないかを確認
-            if(startswith(input_char_pointer, word) && !is_alnum(input_char_pointer[wordLen])){
+            if (startswith(input_char_pointer, word) && !is_alnum(input_char_pointer[wordLen])) {
                 cur = new_token(kind, cur, input_char_pointer, wordLen);
                 input_char_pointer += wordLen;
                 found = true;
@@ -169,14 +169,14 @@ Token *tokenize() {
             }
         }
         
-        if(found){
+        if (found) {
             continue;
         }
 
-        if ('a' <= *input_char_pointer && *input_char_pointer <= 'z'){
+        if ('a' <= *input_char_pointer && *input_char_pointer <= 'z') {
             char *c = input_char_pointer;
             // 複数文字の変数名を対応
-            while(is_alnum(*c)){
+            while (is_alnum(*c)) {
                 c++;
             }
             int len = c - input_char_pointer;
@@ -204,9 +204,9 @@ Token *tokenize() {
 }
 
 // ローカル変数を名前で検索する。見つからなかった場合はNULLを返す。
-LocalVariable *find_local_variable(Token *tok){
-    for(LocalVariable *var = locals[currentFunc]; var; var = var->next){
-        if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
+LocalVariable *find_local_variable(Token *tok) {
+    for (LocalVariable *var = locals[currentFunc]; var; var = var->next) {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
             return var;
         }
     }
