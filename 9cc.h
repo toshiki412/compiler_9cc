@@ -19,6 +19,7 @@ TK_ELSE,        //else
 TK_FOR,         //for
 TK_WHILE,       //while
 TK_TYPE,        //型
+TK_SIZEOF,      //sizeof
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 
@@ -34,11 +35,14 @@ struct Token {
 
 typedef struct Type Type;
 struct Type {
+    // *a[10] は ARRAY -> PTR -> INT のような数珠繋ぎになる
     enum {
         INT,
         PTR,
+        ARRAY,
     } ty;
     struct Type *ptr_to;
+    size_t array_size;
 };
 
 // 複数文字のローカル変数を対応
@@ -149,7 +153,8 @@ equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
-unary      = "+"? primary
+unary      = "sizeof" unary
+           |"+"? primary
            | "-"? primary
            | "*" primary
            | "&" primary

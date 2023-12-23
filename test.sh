@@ -20,6 +20,47 @@ assert(){
     fi
 }
 
+# array test
+assert 0 "int main() { 
+    int a[3]; 
+    return 0;
+}"
+
+assert 0 "int main() { 
+    int a[5][10]; 
+    return 0;
+}"
+
+# sizeof test
+assert 4 "int main() { 
+    int x;
+    return sizeof(x); 
+}"
+
+assert 8 "int main() { 
+    int *x;
+    return sizeof(x); 
+}"
+
+assert 4 "int main() { 
+    int x;
+    return sizeof(x+1); 
+}"
+
+# assert 8 "int main() { 
+#     int *x;
+#     return sizeof(x+2); 
+# }"
+
+assert 4 "int main() { 
+    int *x;
+    return sizeof(*x); 
+}"
+
+assert 4 "int main() { 
+    return sizeof(1); 
+}"
+
 # pointer test
 assert 3 "int main() {
     int x;
