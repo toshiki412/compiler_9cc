@@ -32,6 +32,15 @@ struct Token {
     int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
+typedef struct Type Type;
+struct Type {
+    enum {
+        INT,
+        PTR,
+    } ty;
+    struct Type *ptr_to;
+};
+
 // 複数文字のローカル変数を対応
 typedef struct LocalVariable LocalVariable;
 struct LocalVariable {
@@ -39,6 +48,7 @@ struct LocalVariable {
     char *name; // 変数の名前
     int len; // 名前の長さ
     int offset; // RBPからのオフセット
+    Type *type; // ポインタ
 };
 
 //現在着目しているトークン
@@ -112,6 +122,7 @@ struct Node {
     Node **funcArgs;    //kindがND_FUNC_DEFのとき使う
     int val;        //kindがND_NUMのとき使う
     int offset;     //kindがND_LocalVariableのとき使う
+    Type *type;     //kindがND_LocalVariableのとき使う
 };
 
 extern Node *code[];
@@ -130,7 +141,7 @@ stmt       = expr ";"
            | "if" "(" expr ")" stmt ("else" stmt)?
            | "while" "(" expr ")" stmt
            | "for" "(" expr? ";" expr? ";"expr? ")" stmt
-           | "int" ident ";"
+           | "int" ("*")* ident ";"
            | "{" stmt* "}" 
 expr       = assign
 assign     = equality ("=" assign)?
@@ -159,7 +170,7 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-Node *define_variable(Token *tok);
+Node *define_variable();
 Node *variable(Token *tok);
 void gen_left_value(Node *node);
 void gen(Node *node);

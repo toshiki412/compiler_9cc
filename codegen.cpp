@@ -49,22 +49,21 @@ Node *func() {
     node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
     memcpy(node->funcName, tok->str, tok->len);
     node->funcArgs = static_cast<Node**>(calloc(10,sizeof(Node*))); //引数10個分の配列の長さを作る
+    
     expect("(");
     for (int i = 0; !consume(")"); i++) {
         if (!consume_kind(TK_TYPE)) {
             error("function args type not found.");
         }
 
-        Token *tok = consume_kind(TK_IDENT);
-        if (tok != NULL) {
-            node->funcArgs[i] = define_variable(tok);
-        }
+        node->funcArgs[i] = define_variable();
 
         if (consume(")")) {
             break;
         }
         expect(",");
     }
+
     node->lhs = stmt();
     return node;
 }
@@ -149,8 +148,7 @@ Node *stmt() {
     }
 
     if (consume_kind(TK_TYPE)) {
-        Token *tok = consume_kind(TK_IDENT);
-        node = define_variable(tok);
+        node = define_variable();
         expect(";");
         return node;
     }
@@ -206,9 +204,25 @@ Node *add() {
     Node *node = mul();
     for (;;) {
         if (consume("+")) {
-            node = new_binary(ND_ADD, node, mul());
+            Node *r = mul();
+
+            // ポインタの演算の場合は、ポインタのサイズ分を足す
+            if (node->type && node->type->ty == Type::PTR) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
+                r = new_binary(ND_MUL, r, new_node_num(n));
+            }
+
+            node = new_binary(ND_ADD, node, r);
         } else if (consume("-")) {
-            node = new_binary(ND_SUB, node, mul());
+            Node *r = mul();
+            
+            // ポインタの演算の場合は、ポインタのサイズ分を引く
+            if (node->type && node->type->ty == Type::PTR) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
+                r = new_binary(ND_MUL, r, new_node_num(n));
+            }
+
+            node = new_binary(ND_SUB, node, r);
         } else {
             return node;
         }
@@ -282,7 +296,22 @@ Node *primary() {
 }
 
 // まだ定義されていない変数の定義を行う
-Node *define_variable(Token *tok) {
+Node *define_variable() {
+    Type *type = static_cast<Type*>(calloc(1,sizeof(Type)));
+    type->ty = Type::INT;
+    type->ptr_to = NULL;
+    while (consume("*")) {
+        Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+        t->ty = Type::PTR;
+        t->ptr_to = type;
+        type = t;
+    }
+
+    Token *tok = consume_kind(TK_IDENT);
+    if (tok == NULL) {
+        error("invalid define variable.");
+    }
+
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->kind = ND_LOCAL_VARIABLE;
 
@@ -302,7 +331,10 @@ Node *define_variable(Token *tok) {
     } else {
         local_variable->offset = locals[currentFunc]->offset + 8;
     }
+    local_variable->type = type;
+
     node->offset = local_variable->offset;
+    node->type = local_variable->type;
     locals[currentFunc] = local_variable;
     char name[100] = {0};
     memcpy(name, tok->str, tok->len);
@@ -323,10 +355,17 @@ Node *variable(Token *tok) {
     }
 
     node->offset = local_variable->offset;
+    node->type = local_variable->type;
     return node;
 }
 
 void gen_left_value(Node *node) {
+    // derefである場合 *p = 1; など
+    if (node->kind == ND_DEREF) {
+        gen(node->lhs);
+        return;
+    }
+
     if (node->kind != ND_LOCAL_VARIABLE) {
         error("not ND_LOCAL_VARIABLE");
     }

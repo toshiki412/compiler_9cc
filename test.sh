@@ -20,17 +20,56 @@ assert(){
     fi
 }
 
+# pointer test
+assert 3 "int main() {
+    int x;
+    int *y;
+    y = &x;
+    *y = 3;
+    return x;
+}"
+
+assert 4 "int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 2;
+    return *q;
+}"
+
+assert 2 "int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 3;
+    q = q - 2;
+    return *q;
+}"
+
+assert 12 "int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 2;
+    int x;
+    x = *q;
+    q = p + 3;
+    int y;
+    y = *q;
+    return x + y;
+}"
+
 # int test
 assert 2 "int main() { int x; x = 2; return x;}"
-assert 7 "int main() { 
+assert 8 "int main() { 
     int a;
     int b; 
     a = 2; 
     b = 5; 
-    return func(a,b);
+    return func(a,b, 1);
     }
-int  func(int x, int y){
-    return x + y;
+int  func(int x, int y, int z){
+    return x + y + z;
 }"
 
 # value test
