@@ -191,17 +191,22 @@ assert 7 "int main() { return bar(3,4); }"
 assert 35 "int main() { return piyo(5, 9, 21); }"
 
 # address, dereference test
-# assert 3 "int main() {
-#     x = 3;
-#     y = &x;
-#     return *y;
-# }"
+assert 3 "int main() {
+    int x;
+    int y;
+    x = 3;
+    y = &x;
+    return *y;
+}"
 
-# assert 3 "int main() {
-#     x = 3;
-#     y = 5;
-#     z = &y + 8;
-#     return *z;
-# }"
+assert 3 "int main() {
+    int x;
+    int y;
+    int z;
+    x = 3;
+    y = 5;
+    z = &y + 8;
+    return *z;
+}"
 
 echo OK

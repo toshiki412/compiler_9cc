@@ -9,7 +9,7 @@
 
 //tokenize
 //トークンの種類
-typedef enum{
+typedef enum {
 TK_RESERVED,    //記号
 TK_IDENT,       //識別子
 TK_NUM,         //整数トークン
@@ -24,7 +24,7 @@ TK_EOF,         //入力の終わりを表すトークン
 
 //トークン型
 typedef struct Token Token;
-struct Token{
+struct Token {
     TokenKind kind; //トークンの型
     Token *next;    //次の入力トークン
     int val;        //kindがTK_NUMのとき、その数値
@@ -34,7 +34,7 @@ struct Token{
 
 // 複数文字のローカル変数を対応
 typedef struct LocalVariable LocalVariable;
-struct LocalVariable{
+struct LocalVariable {
     LocalVariable *next; // 次の変数かNULL
     char *name; // 変数の名前
     int len; // 名前の長さ
@@ -74,7 +74,7 @@ Token *tokenize();
 
 //codegen
 //抽象構文木の種類
-typedef enum{
+typedef enum {
     ND_ADD,         // +
     ND_SUB,         // -
     ND_MUL,         // *
@@ -97,13 +97,13 @@ typedef enum{
     ND_FUNC_CALL,   //関数呼び出し
     ND_FUNC_DEF,    //関数定義
     ND_ADDR,    //アドレス &
-    ND_DEREF,    //参照先の値  *
+    ND_DEREF,    //参照先の値 *
 } NodeKind;
 
 
 //抽象構文木のノードの型
 typedef struct Node Node;
-struct Node{
+struct Node {
     NodeKind kind;
     Node *lhs;      //左辺
     Node *rhs;      //右辺
