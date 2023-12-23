@@ -66,6 +66,7 @@ Node *primary();
 
 Node *define_variable();
 Node *variable(Token *tok);
+Type *get_type(Node *node);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 /*

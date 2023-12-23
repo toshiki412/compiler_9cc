@@ -256,8 +256,9 @@ Node *unary() {
         return new_binary(ND_ADDR, unary(), NULL);
     }
     if (consume_kind(TK_SIZEOF)) {
-        Node *node = unary();
-        int size = node->type && node->type->ty == Type::PTR ? 8 : 4;
+        Node *n = unary();
+        Type *t = get_type(n);
+        int size = t && t->ty == Type::PTR ? 8 : 4;
         return new_node_num(size);
     }
     return primary();
@@ -298,6 +299,31 @@ Node *primary() {
 
     // そうでなければ数値のはず
     return new_node_num(expect_number());
+}
+
+Type *get_type(Node *node) {
+    if (!node) {
+        return NULL;
+    }
+    
+    if (node->type) {
+        return node->type;
+    }
+
+    Type *t = get_type(node->lhs);
+    if (!t) {
+        t = get_type(node->rhs);
+    }
+
+    if (t && node->kind == ND_DEREF) {
+        t = t->ptr_to;
+        if (t == NULL) {
+            error("invalid pointer dereference.");
+        }
+        return t;
+    }
+
+    return t;
 }
 
 // まだ定義されていない変数の定義を行う
