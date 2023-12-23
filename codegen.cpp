@@ -317,6 +317,24 @@ Node *define_variable() {
         error("invalid define variable.");
     }
 
+    int size = type->ty == Type::PTR ? 8 : 4;
+
+    // 配列かチェック
+    while (consume("[")) {
+        Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+        t->ty = Type::ARRAY;
+        t->ptr_to = type;
+        t->array_size = expect_number();
+        type = t;
+        size *= t->array_size;
+        expect("]");
+    }
+
+    // sizeを8の倍数にする
+    while ((size % 8) != 0) {
+        size += 4;
+    }
+
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->kind = ND_LOCAL_VARIABLE;
 
@@ -334,7 +352,7 @@ Node *define_variable() {
     if (locals[currentFunc] == NULL) {
         local_variable->offset = 8;
     } else {
-        local_variable->offset = locals[currentFunc]->offset + 8;
+        local_variable->offset = locals[currentFunc]->offset + size;
     }
     local_variable->type = type;
 
@@ -419,7 +437,12 @@ void gen(Node *node) {
             // 全体のずらすべき数
             int offset = locals[currentFunc][0].offset;
 
-            // 引数の数を除いた数
+            for (LocalVariable *cur = locals[currentFunc]; cur; cur = cur->next) {
+                // TODO 現在はint型のみ対応
+                offset += cur->type->ty == Type::ARRAY ? cur->type->array_size * 4 : 8;
+            }
+
+            // スタックに積んだ引数の数を除いた数
             offset -= functionArgNum * 8;
             
             printf("    sub rsp, %d\n", offset);
