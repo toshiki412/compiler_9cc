@@ -6,9 +6,6 @@ Token *token;
 // 入力プログラム
 char *user_input;
 
-//ローカル変数
-LocalVariable *locals[100];
-int currentFunc = 0;
 
 //エラーを報告するための関数
 //locはエラーが発生した位置
@@ -112,7 +109,7 @@ struct ReservedWord{
     TokenKind kind;
 };
 
-ReservedWord reservedWords[] = {
+ReservedWord reserved_words[] = {
     {"return", TK_RETURN},
     {"if", TK_IF},
     {"else", TK_ELSE},
@@ -155,16 +152,16 @@ Token *tokenize() {
         }
 
         bool found = false;
-        for (int i = 0; reservedWords[i].kind != TK_EOF; i++) {
-            const char *word = reservedWords[i].word;
-            int wordLen = strlen(word);
-            TokenKind kind = reservedWords[i].kind;
+        for (int i = 0; reserved_words[i].kind != TK_EOF; i++) {
+            const char *word = reserved_words[i].word;
+            int word_len = strlen(word);
+            TokenKind kind = reserved_words[i].kind;
 
             // pが予約語wまで読んで、かつwの次の文字がアルファベットでない場合
             // w=returnのとき、returnxのようになっていないかを確認
-            if (startswith(input_char_pointer, word) && !is_alnum(input_char_pointer[wordLen])) {
-                cur = new_token(kind, cur, input_char_pointer, wordLen);
-                input_char_pointer += wordLen;
+            if (startswith(input_char_pointer, word) && !is_alnum(input_char_pointer[word_len])) {
+                cur = new_token(kind, cur, input_char_pointer, word_len);
+                input_char_pointer += word_len;
                 found = true;
                 break;
             }
@@ -202,14 +199,4 @@ Token *tokenize() {
     // ex )12 + 31 - 15の場合、tokenは以下のように構成されている
     // &head -> TK_NUM("12") -> TK_RESERVED("+") -> TK_NUM("31") -> TK_RESERVED("-") -> TK_NUM("15") -> TK_EOF
     return head.next;
-}
-
-// ローカル変数を名前で検索する。見つからなかった場合はNULLを返す。
-LocalVariable *find_local_variable(Token *tok) {
-    for (LocalVariable *var = locals[currentFunc]; var; var = var->next) {
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-            return var;
-        }
-    }
-    return NULL;
 }

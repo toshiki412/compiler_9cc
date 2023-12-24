@@ -1,36 +1,39 @@
 #include "9cc.h"
 
-void gen_left_value(Node *node) {
+
+void gen_variable(Node *node) {
     // derefである場合 *p = 1; など
     if (node->kind == ND_DEREF) {
         gen(node->lhs);
         return;
     }
 
-    if (node->kind != ND_LOCAL_VARIABLE) {
-        error("not ND_LOCAL_VARIABLE");
+    if (node->kind == ND_LOCAL_VARIABLE) {
+        printf("    mov rax, rbp\n");
+        printf("    sub rax, %d\n", node->offset);
+        printf("    push rax\n");
+    } else if (node->kind == ND_GLOBAL_VARIABLE_USE) {
+        printf("    push offset %s\n", node->variable_name);
+    } else {
+        error("not VARIABLE");
     }
-
-    printf("    mov rax, rbp\n");
-    printf("    sub rax, %d\n", node->offset);
-    printf("    push rax\n");
 }
 
-int genCounter = 0; //genが呼ばれるたびにインクリメントされる
+int gen_counter = 0; //genが呼ばれるたびにインクリメントされる
 
 //x86-64のABIに従い、引数はとりあえず6つまで
-const char *argRegisters[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"}; 
+const char *arg_registers[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"}; 
 
 //スタックマシン
 void gen(Node *node) {
     if (!node) return;
-    genCounter += 1;
-    int labelId = genCounter;
-    int functionArgNum = 0;
+    gen_counter += 1;
+    int labelId = gen_counter;
+    int func_arg_num = 0;
 
     switch (node->kind) {
     case ND_ADDR:
-        gen_left_value(node->lhs);
+        gen_variable(node->lhs);
         return;
     case ND_DEREF:
         gen(node->lhs);
@@ -39,29 +42,30 @@ void gen(Node *node) {
         printf("    push rax\n");
         return;
     case ND_FUNC_DEF:
-        printf("%s:\n", node->funcName);
+        printf(".global %s\n", node->func_name);
+        printf("%s:\n", node->func_name);
 
         //プロローグ
         printf("    push rbp\n");
         printf("    mov rbp, rsp\n");
 
         //引数の値をスタックに積む
-        for (int i = 0; node->funcArgs[i]; i++) {
-            printf("    push %s\n", argRegisters[i]);
-            functionArgNum++;
+        for (int i = 0; node->func_args[i]; i++) {
+            printf("    push %s\n", arg_registers[i]);
+            func_arg_num++;
         }
         //引数の数を除いた変数の数だけrspをずらして、変数領域を確保する。
-        if (locals[currentFunc]) {
+        if (locals[current_func]) {
             // 全体のずらすべき数
-            int offset = locals[currentFunc]->offset;
+            int offset = locals[current_func]->offset;
 
-            for (LocalVariable *cur = locals[currentFunc]; cur; cur = cur->next) {
+            for (Variable *cur = locals[current_func]; cur; cur = cur->next) {
                 // TODO 現在はint型のみ対応
                 offset += cur->type->ty == Type::ARRAY ? cur->type->array_size * 4 : 8;
             }
 
             // スタックに積んだ引数の数を除いた数
-            offset -= functionArgNum * 8;
+            offset -= func_arg_num * 8;
             
             printf("    sub rsp, %d\n", offset);
         }
@@ -77,12 +81,12 @@ void gen(Node *node) {
     case ND_FUNC_CALL:
         for (int i = 0; node->block[i]; i++) {
             gen(node->block[i]);
-            functionArgNum++;
+            func_arg_num++;
         }
 
         //スタックに積んだ引数の値を取り出す
-        for (int i = functionArgNum - 1; i >= 0; i--) {
-            printf("    pop %s\n", argRegisters[i]);
+        for (int i = func_arg_num - 1; i >= 0; i--) {
+            printf("    pop %s\n", arg_registers[i]);
         }
         
         //関数呼び出し
@@ -90,12 +94,12 @@ void gen(Node *node) {
         printf("    and rax, 15\n");                //下位４bitをマスクする rspが16の倍数かどうかをチェックする
         printf("    jnz .L.call.%03d\n", labelId);  //16の倍数じゃないならばジャンプ
         printf("    mov rax, 0\n");
-        printf("    call %s\n", node->funcName);    //関数呼び出し
+        printf("    call %s\n", node->func_name);    //関数呼び出し
         printf("    jmp .L.end.%03d\n", labelId);
         printf(".L.call.%03d:\n", labelId);
         printf("    sub rsp, 8\n");                 // rspを16の倍数にするために8バイト分ずらす
         printf("    mov rax, 0\n");
-        printf("    call %s\n", node->funcName);    //関数呼び出し
+        printf("    call %s\n", node->func_name);    //関数呼び出し
         printf("    add rsp, 8\n");                 // 8バイトずらしたrspを元に戻す
         printf(".L.end.%03d:\n", labelId);
         printf("    push rax\n");                   //関数からリターンしたときにraxに入っている値が関数の返り値という約束
@@ -164,7 +168,8 @@ void gen(Node *node) {
         printf("    push %d\n", node->val);
         return;
     case ND_LOCAL_VARIABLE:
-        gen_left_value(node);
+    case ND_GLOBAL_VARIABLE_USE:
+        gen_variable(node);
         if (node->type && node->type->ty == Type::ARRAY) {
             return;
         }
@@ -172,8 +177,12 @@ void gen(Node *node) {
         printf("    mov rax, [rax]\n");
         printf("    push rax\n");
         return;
+    case ND_GLOBAL_VARIABLE_DEF:
+        printf("%s:\n", node->variable_name);
+        printf("    .zero %d\n", node->byte_size);
+        return;
     case ND_ASSIGN:
-        gen_left_value(node->lhs);
+        gen_variable(node->lhs);
         gen(node->rhs);
         printf("    pop rdi\n");
         printf("    pop rax\n");

@@ -3,7 +3,7 @@
 
 #include "parse.h"
 
-void gen_left_value(Node *node);
+void gen_variable(Node *node);
 void gen(Node *node);
 
 #endif

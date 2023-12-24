@@ -3,8 +3,8 @@
 
 //トークンの種類
 typedef enum {
-TK_RESERVED,    //記号
-TK_IDENT,       //識別子
+TK_RESERVED,    //記号 +, -, *, ==, [, ... など
+TK_IDENT,       //識別子 変数名や関数名
 TK_NUM,         //整数トークン
 TK_RETURN,      //return
 TK_IF,          //if
@@ -26,36 +26,6 @@ struct Token {
     int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
-//現在着目しているトークン
-extern Token *token;
-
-typedef struct Type Type;
-struct Type {
-    // *a[10] は ARRAY -> PTR -> INT のような数珠繋ぎになる
-    enum {
-        INT,
-        PTR,
-        ARRAY,
-    } ty;
-    struct Type *ptr_to;
-    size_t array_size;
-};
-
-// 複数文字のローカル変数を対応
-typedef struct LocalVariable LocalVariable;
-struct LocalVariable {
-    LocalVariable *next; // 次の変数かNULL
-    char *name; // 変数の名前
-    int len; // 名前の長さ
-    int offset; // RBPからのオフセット
-    Type *type; // ポインタ
-};
-
-// ローカル変数
-// localsを辿って変数名を見ていくことで既存の変数かどうかがわかる
-extern LocalVariable *locals[];
-extern int currentFunc;
-
 
 void error_at(char *loc, const char *fmt, ...);
 void error(const char *fmt, ...);
@@ -65,7 +35,6 @@ void expect(const char *op);
 int expect_number();
 bool at_eof();
 bool startswith(char *p, const char *q);
-LocalVariable *find_local_variable(Token *tok);
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) ;
 Token *tokenize();
 
