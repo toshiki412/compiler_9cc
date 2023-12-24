@@ -1,5 +1,13 @@
 #include "9cc.h"
 
+//ローカル変数 100個の関数まで対応
+Variable *locals[100];
+
+// グローバル変数
+Variable *globals[100];
+
+int current_func = 0;
+
 Node *new_node(NodeKind kind) {
     Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
     node->kind = kind;
@@ -32,40 +40,38 @@ void program() {
 }
 
 Node *func() {
-    currentFunc++;
     Node *node;
 
-    if (!consume_kind(TK_TYPE)) {
-        error("function return type not found.");
-    }
+    // int *foo() {} のような関数定義の場合, int *fooの部分を読む
+    DefineFuncOrVariable *def_first_half = read_define_first_half();
 
-    Token *tok = consume_kind(TK_IDENT);
-    if (tok == NULL) {
-        error("not function!");
-    }
+    if (consume("(")) {
+        current_func++;
 
-    node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->kind = ND_FUNC_DEF;
-    node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
-    memcpy(node->funcName, tok->str, tok->len);
-    node->funcArgs = static_cast<Node**>(calloc(10,sizeof(Node*))); //引数10個分の配列の長さを作る
-    
-    expect("(");
-    for (int i = 0; !consume(")"); i++) {
-        if (!consume_kind(TK_TYPE)) {
-            error("function args type not found.");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_FUNC_DEF;
+        node->func_name = static_cast<char*>(calloc(100,sizeof(char)));
+        memcpy(node->func_name, def_first_half->ident->str, def_first_half->ident->len);
+        node->func_args = static_cast<Node**>(calloc(10,sizeof(Node*))); //引数10個分の配列の長さを作る
+
+        for (int i = 0; !consume(")"); i++) {
+            node->func_args[i] = define_variable(read_define_first_half(), locals);
+
+            if (consume(")")) {
+                break;
+            }
+            expect(",");
         }
 
-        node->funcArgs[i] = define_variable();
-
-        if (consume(")")) {
-            break;
-        }
-        expect(",");
+        node->lhs = stmt();
+        return node;
+    } else {
+        // fooのあと( でなければ変数定義である    
+        node = define_variable(def_first_half, globals); // グローバル変数の登録
+        node->kind = ND_GLOBAL_VARIABLE_DEF; // グローバル変数の場合はND_GLOBAL_VARIABLE_DEFに書き換える ちょっと微妙
+        expect(";");
+        return node;
     }
-
-    node->lhs = stmt();
-    return node;
 }
 
 Node *stmt() {
@@ -147,8 +153,9 @@ Node *stmt() {
         return node;
     }
 
-    if (consume_kind(TK_TYPE)) {
-        node = define_variable();
+    DefineFuncOrVariable *def_first_half = read_define_first_half();
+    if (def_first_half) {
+        node = define_variable(def_first_half, locals);
         expect(";");
         return node;
     }
@@ -278,8 +285,8 @@ Node *primary() {
             //関数呼び出し
             Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_FUNC_CALL;
-            node->funcName = static_cast<char*>(calloc(1,sizeof(char)));
-            memcpy(node->funcName, tok->str, tok->len);
+            node->func_name = static_cast<char*>(calloc(1,sizeof(char)));
+            memcpy(node->func_name, tok->str, tok->len);
 
             //引数 とりあえず10個まで
             node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
@@ -326,23 +333,44 @@ Type *get_type(Node *node) {
     return t;
 }
 
-// まだ定義されていない変数の定義を行う
-Node *define_variable() {
+// 関数か変数定義の前半部分を読んで、それを返す
+// int *foo; int *foo() {} があった場合、int *fooの部分までを読む
+DefineFuncOrVariable *read_define_first_half() {
+    if (!consume_kind(TK_TYPE)) {
+        return NULL;
+    }
+
     Type *type = static_cast<Type*>(calloc(1,sizeof(Type)));
     type->ty = Type::INT;
     type->ptr_to = NULL;
+
+    // derefの*を読む
     while (consume("*")) {
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
         t->ty = Type::PTR;
         t->ptr_to = type;
-        type = t;
+        type = t; // 最終的にtypeは*intのような形になる
     }
 
     Token *tok = consume_kind(TK_IDENT);
     if (tok == NULL) {
-        error("invalid define variable.");
+        error("invalid define function or variable.");
     }
 
+    DefineFuncOrVariable *def_first_half = static_cast<DefineFuncOrVariable*>(calloc(1,sizeof(DefineFuncOrVariable)));
+    def_first_half->type = type;
+    def_first_half->ident = tok;
+
+    return def_first_half;
+}
+
+// まだ定義されていない変数の定義を行う
+Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
+    if (def_first_half == NULL) {
+        error("invalid def_first_half variable.");
+    }
+
+    Type *type = def_first_half->type;
     int size = type->ty == Type::PTR ? 8 : 4;
 
     // 配列かチェック
@@ -362,31 +390,38 @@ Node *define_variable() {
     }
 
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->kind = ND_LOCAL_VARIABLE;
+    node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
+    memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
+    node->byte_size = size;
 
-    LocalVariable *local_variable = find_local_variable(tok);
+    Variable *local_variable = find_varable(def_first_half->ident);
     if (local_variable != NULL) {
-        char name[100] = {0};
-        memcpy(name, tok->str, tok->len);
-        error("redefined variable: %s", name);
+        error("redefined variable: %s", node->variable_name);
     }
 
-    local_variable = static_cast<LocalVariable*>(calloc(1,sizeof(LocalVariable)));
-    local_variable->next = locals[currentFunc];
-    local_variable->name = tok->str;
-    local_variable->len = tok->len;
-    if (locals[currentFunc] == NULL) {
+    // FIXME
+    if (locals == variable_list) {
+        node->kind = ND_LOCAL_VARIABLE;
+    } else {
+        node->kind = ND_GLOBAL_VARIABLE_USE;
+    }
+
+    local_variable = static_cast<Variable*>(calloc(1,sizeof(Variable)));
+    local_variable->next = variable_list[current_func];
+    local_variable->name = def_first_half->ident->str;
+    local_variable->len = def_first_half->ident->len;
+    if (variable_list[current_func] == NULL) {
         local_variable->offset = 8;
     } else {
-        local_variable->offset = locals[currentFunc]->offset + size;
+        local_variable->offset = variable_list[current_func]->offset + size;
     }
     local_variable->type = type;
 
     node->offset = local_variable->offset;
     node->type = local_variable->type;
-    locals[currentFunc] = local_variable;
+    variable_list[current_func] = local_variable;
     char name[100] = {0};
-    memcpy(name, tok->str, tok->len);
+    memcpy(name, def_first_half->ident->str, def_first_half->ident->len);
     // fprintf(stderr, "*NEW VARIABLE* %s\n", name);
     return node;
 }
@@ -394,15 +429,19 @@ Node *define_variable() {
 // 定義済みの変数を参照する
 Node *variable(Token *tok) {
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->kind = ND_LOCAL_VARIABLE;
+    node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
+    memcpy(node->variable_name, tok->str, tok->len);
 
-    LocalVariable *local_variable = find_local_variable(tok);
+    Variable *local_variable = find_varable(tok);
     if (local_variable == NULL) {
-        char name[100] = {0};
-        memcpy(name, tok->str, tok->len);
-        error("undefined variable: %s", name);
+        error("undefined variable: %s", node->variable_name);
     }
 
+    if (local_variable->kind == Variable::LOCAL_VARIABLE) {
+        node->kind = ND_LOCAL_VARIABLE;
+    } else {
+        node->kind = ND_GLOBAL_VARIABLE_USE;
+    }
     node->offset = local_variable->offset;
     node->type = local_variable->type;
 
@@ -425,4 +464,26 @@ Node *variable(Token *tok) {
         expect("]");
     }
     return node;
+}
+
+// 変数を名前で検索する。
+Variable *find_varable(Token *tok) {
+    // まずローカルの変数を検索
+    for (Variable *var = locals[current_func]; var; var = var->next) {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+            var->kind = Variable::LOCAL_VARIABLE;
+            return var;
+        }
+    }
+
+    // ローカル変数に変数名が無ければ次にグローバル変数を検索
+    for (Variable *var = globals[0]; var; var = var->next) {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+            var->kind = Variable::GLOBAL_VARIABLE;
+            return var;
+        }
+    }
+
+    // どちらもなければNULLを返す
+    return NULL;
 }

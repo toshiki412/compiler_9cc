@@ -8,7 +8,7 @@ assert(){
     cd func
     g++ -c func.cpp
     cd ../
-    g++ -o tmp tmp.s func/func.o -Wl,-z,noexecstack   #-Wl,-z,noexecstackはリンカオプションで警告文を消すために付けた
+    g++ -static -o tmp tmp.s func/func.o -Wl,-z,noexecstack   #-Wl,-z,noexecstackはリンカオプションで警告文を消すために付けた
     ./tmp
     actual="$?"
 
@@ -19,6 +19,24 @@ assert(){
         exit 1
     fi
 }
+
+# global variable test
+assert 3 "
+int x;
+int y[10];
+int main() { 
+    return 3; 
+}"
+
+assert 5 "
+int x;
+int y[10];
+int main() { 
+    x = 2;
+    y[0] = 3;
+    return x + y[0]; 
+}"
+
 
 # array test
 assert 0 "int main() { 

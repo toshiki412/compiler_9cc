@@ -4,6 +4,7 @@ LDFLAGS=-lstdc++ #必要なライブラリを追加する
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)
 
+# makeコマンドの引数がない場合は、最初のターゲットを実行するので、これが実行される
 9cc: $(OBJS)
 		$(CXX) -o 9cc $(OBJS) $(LDFLAGS)
 
