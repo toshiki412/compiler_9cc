@@ -53,7 +53,7 @@ void gen(Node *node) {
         //引数の数を除いた変数の数だけrspをずらして、変数領域を確保する。
         if (locals[currentFunc]) {
             // 全体のずらすべき数
-            int offset = locals[currentFunc][0].offset;
+            int offset = locals[currentFunc]->offset;
 
             for (LocalVariable *cur = locals[currentFunc]; cur; cur = cur->next) {
                 // TODO 現在はint型のみ対応
@@ -165,6 +165,9 @@ void gen(Node *node) {
         return;
     case ND_LOCAL_VARIABLE:
         gen_left_value(node);
+        if (node->type && node->type->ty == Type::ARRAY) {
+            return;
+        }
         printf("    pop rax\n");
         printf("    mov rax, [rax]\n");
         printf("    push rax\n");
