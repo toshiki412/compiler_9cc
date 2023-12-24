@@ -207,7 +207,7 @@ Node *add() {
             Node *r = mul();
 
             // ポインタの演算の場合は、ポインタのサイズ分を足す
-            if (node->type && node->type->ty == Type::PTR) {
+            if (node->type && node->type->ty != Type::INT) {
                 int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
                 r = new_binary(ND_MUL, r, new_node_num(n));
             }
@@ -217,7 +217,7 @@ Node *add() {
             Node *r = mul();
             
             // ポインタの演算の場合は、ポインタのサイズ分を引く
-            if (node->type && node->type->ty == Type::PTR) {
+            if (node->type && node->type->ty != Type::INT) {
                 int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
                 r = new_binary(ND_MUL, r, new_node_num(n));
             }
@@ -405,5 +405,24 @@ Node *variable(Token *tok) {
 
     node->offset = local_variable->offset;
     node->type = local_variable->type;
+
+    // a[3] は *(a + 3) と同じ  tokでaまで取れている
+    while (consume("[")) {
+        // nodeは現在a 
+        // addのlhsにa, rhsに3を入れる
+        // addには(a + 3)が入る
+        Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
+        add->kind = ND_ADD;
+        add->lhs = node;
+        add->rhs = expr();
+
+        // 新しいnodeを作って、lhsに(a + 3)のaddを入れる
+        // 最終的にnodeを返すため、nodeを新しく更新している
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_DEREF;
+        node->lhs = add;
+
+        expect("]");
+    }
     return node;
 }

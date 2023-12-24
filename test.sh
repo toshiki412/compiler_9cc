@@ -31,6 +31,25 @@ assert 0 "int main() {
     return 0;
 }"
 
+assert 30 "int main() { 
+    int a[2]; 
+    *a = 10;
+    *(a+1) = 20;
+    int *p;
+    p = a;
+    return *p + *(p + 1);
+}"
+
+# 2d”z—ñ‚Í“®‚©‚È‚©‚Á‚½
+assert 30 "int main() { 
+    int a[2]; 
+    a[0] = 10;
+    a[1] = 20;
+    int *p;
+    p = a;
+    return p[0] + p[1];
+}"
+
 # sizeof test
 assert 4 "int main() { 
     int x;
