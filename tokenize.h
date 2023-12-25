@@ -27,7 +27,7 @@ struct Token {
     int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
-
+char *read_file(char *path);
 void error_at(char *loc, const char *fmt, ...);
 void error(const char *fmt, ...);
 bool consume(const char *op);

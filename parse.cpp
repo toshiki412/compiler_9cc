@@ -474,12 +474,18 @@ Node *variable(Token *tok) {
     // a[3] は *(a + 3) と同じ  tokでaまで取れている
     while (consume("[")) {
         // nodeは現在a 
-        // addのlhsにa, rhsに3を入れる
+        // addのlhsにa, rhsに3*4を入れる(4はaがintの場合のサイズ)
         // addには(a + 3)が入る
         Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
         add->kind = ND_ADD;
         add->lhs = node;
-        add->rhs = expr();
+        if (node->type && node->type->ty != Type::INT) {
+            int n = node->type->ptr_to->ty == Type::INT ? 4 
+                    : node->type->ptr_to->ty == Type::CHAR ? 1
+                    : 8;
+            // 型のサイズにexpr()の値をかけた数字をrhsに入れる
+            add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
+        }
 
         // 新しいnodeを作って、lhsに(a + 3)のaddを入れる
         // 最終的にnodeを返すため、nodeを新しく更新している
