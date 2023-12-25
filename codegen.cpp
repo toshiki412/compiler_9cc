@@ -22,7 +22,10 @@ void gen_variable(Node *node) {
 int gen_counter = 0; //genが呼ばれるたびにインクリメントされる
 
 //x86-64のABIに従い、引数はとりあえず6つまで
-const char *arg_registers[] = {"rdi", "rsi", "rdx", "rcx", "r8","r9"}; 
+const char *arg_registers_8bit[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"}; 
+const char *arg_registers_16bit[] = {"di", "si", "dx", "cx", "r8w", "r9w"}; 
+const char *arg_registers_32bit[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"}; 
+const char *arg_registers_64bit[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"}; 
 
 //スタックマシン
 void gen(Node *node) {
@@ -49,25 +52,26 @@ void gen(Node *node) {
         printf("    push rbp\n");
         printf("    mov rbp, rsp\n");
 
-        //引数の値をスタックに積む
-        for (int i = 0; node->func_args[i]; i++) {
-            printf("    push %s\n", arg_registers[i]);
-            func_arg_num++;
-        }
         //引数の数を除いた変数の数だけrspをずらして、変数領域を確保する。
         if (locals[current_func]) {
-            // 全体のずらすべき数
             int offset = locals[current_func]->offset;
-
-            for (Variable *cur = locals[current_func]; cur; cur = cur->next) {
-                // TODO 現在はint型のみ対応
-                offset += cur->type->ty == Type::ARRAY ? cur->type->array_size * 4 : 8;
-            }
-
-            // スタックに積んだ引数の数を除いた数
-            offset -= func_arg_num * 8;
-            
             printf("    sub rsp, %d\n", offset);
+        }
+
+        //引数の値をスタックに積む
+        for (int i = 0; node->func_args[i]; i++) {
+            if (node->func_args[i]->byte_size == 1) {
+                printf("    mov [rbp-%d], %s\n", node->func_args[i]->offset, arg_registers_8bit[i]);
+            } else if (node->func_args[i]->byte_size == 2) {
+                printf("    mov [rbp-%d], %s\n", node->func_args[i]->offset, arg_registers_16bit[i]);
+            } else if (node->func_args[i]->byte_size == 4) {
+                printf("    mov [rbp-%d], %s\n", node->func_args[i]->offset, arg_registers_32bit[i]);
+            } else if (node->func_args[i]->byte_size == 8) {
+                printf("    mov [rbp-%d], %s\n", node->func_args[i]->offset, arg_registers_64bit[i]);
+            } else {
+                error("invalid byte size");
+            }
+            func_arg_num++;
         }
 
         gen(node->lhs);
@@ -86,7 +90,7 @@ void gen(Node *node) {
 
         //スタックに積んだ引数の値を取り出す
         for (int i = func_arg_num - 1; i >= 0; i--) {
-            printf("    pop %s\n", arg_registers[i]);
+            printf("    pop %s\n", arg_registers_64bit[i]);
         }
         
         //関数呼び出し
@@ -174,7 +178,13 @@ void gen(Node *node) {
             return;
         }
         printf("    pop rax\n");
-        printf("    mov rax, [rax]\n");
+        if (node->type && node->type->ty == Type::CHAR) {
+            printf("    movsx rax, BYTE PTR [rax]\n");
+        } else if (node->type && node->type->ty == Type::INT) {
+            printf("    movsxd rax, DWORD PTR [rax]\n");
+        } else {
+            printf("    mov rax, [rax]\n");
+        }
         printf("    push rax\n");
         return;
     case ND_GLOBAL_VARIABLE_DEF:
@@ -186,7 +196,13 @@ void gen(Node *node) {
         gen(node->rhs);
         printf("    pop rdi\n");
         printf("    pop rax\n");
-        printf("    mov [rax], rdi\n");
+        if (node->lhs->type && node->lhs->type->ty == Type::CHAR) {
+            printf("    mov [rax], dil\n");
+        } else if (node->lhs->type && node->lhs->type->ty == Type::INT) {
+            printf("    mov [rax], edi\n");
+        } else {
+            printf("    mov [rax], rdi\n");
+        }
         printf("    push rdi\n");
         return;
     }

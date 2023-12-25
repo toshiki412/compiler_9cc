@@ -40,6 +40,7 @@ struct Type {
         INT,
         PTR,
         ARRAY,
+        CHAR,
     } ty;
     struct Type *ptr_to; // tyがPTRのときポインタの指す先の型
     size_t array_size; // tyがARRAYのとき配列のサイズ

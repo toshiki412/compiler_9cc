@@ -215,7 +215,9 @@ Node *add() {
 
             // ポインタの演算の場合は、ポインタのサイズ分を足す
             if (node->type && node->type->ty != Type::INT) {
-                int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
+                int n = node->type->ptr_to->ty == Type::INT ? 4 
+                    : node->type->ptr_to->ty == Type::CHAR ? 1
+                    : 8;
                 r = new_binary(ND_MUL, r, new_node_num(n));
             }
 
@@ -225,7 +227,9 @@ Node *add() {
             
             // ポインタの演算の場合は、ポインタのサイズ分を引く
             if (node->type && node->type->ty != Type::INT) {
-                int n = node->type->ptr_to->ty == Type::INT ? 4 : 8;
+                int n = node->type->ptr_to->ty == Type::INT ? 4 
+                    : node->type->ptr_to->ty == Type::CHAR ? 1
+                    : 8;
                 r = new_binary(ND_MUL, r, new_node_num(n));
             }
 
@@ -265,7 +269,9 @@ Node *unary() {
     if (consume_kind(TK_SIZEOF)) {
         Node *n = unary();
         Type *t = get_type(n);
-        int size = t && t->ty == Type::PTR ? 8 : 4;
+        int size = t && t->ty == Type::PTR ? 8 
+                : t && t->ty == Type::CHAR ? 1
+                : 4;
         return new_node_num(size);
     }
     return primary();
@@ -336,12 +342,14 @@ Type *get_type(Node *node) {
 // 関数か変数定義の前半部分を読んで、それを返す
 // int *foo; int *foo() {} があった場合、int *fooの部分までを読む
 DefineFuncOrVariable *read_define_first_half() {
-    if (!consume_kind(TK_TYPE)) {
+    Token *type_token = consume_kind(TK_TYPE);
+    if (!type_token) {
         return NULL;
     }
 
     Type *type = static_cast<Type*>(calloc(1,sizeof(Type)));
-    type->ty = Type::INT;
+    bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
+    type->ty = is_char ? Type::CHAR : Type::INT;
     type->ptr_to = NULL;
 
     // derefの*を読む
@@ -371,7 +379,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     }
 
     Type *type = def_first_half->type;
-    int size = type->ty == Type::PTR ? 8 : 4;
+    int size = type->ty == Type::PTR ? 8 : type->ty == Type::CHAR ? 1 : 4;
 
     // 配列かチェック
     while (consume("[")) {
@@ -382,11 +390,6 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         type = t;
         size *= t->array_size;
         expect("]");
-    }
-
-    // sizeを8の倍数にする
-    while ((size % 8) != 0) {
-        size += 4;
     }
 
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
