@@ -189,8 +189,28 @@ Token *tokenize() {
     while (*input_char_pointer) {
         // 空白文字をスキップ
         if (isspace(*input_char_pointer)) {
-        input_char_pointer++;
-        continue;
+            input_char_pointer++;
+            continue;
+        }
+
+        // 行コメントをスキップ
+        if (startswith(input_char_pointer, "//")) {
+            input_char_pointer += 2;
+            while (*input_char_pointer != '\n') {
+                input_char_pointer++;
+            }
+            continue;
+        }
+
+        // ブロックコメントをスキップ
+        if (startswith(input_char_pointer, "/*")) {
+            // strstr(文字列, 検索文字列)は文字列から検索文字列を探し、その先頭へのポインタを返す
+            char *p = strstr(input_char_pointer + 2, "*/");
+            if (!p) {
+                error_at(input_char_pointer, "コメントが閉じられていません");
+            }
+            input_char_pointer = p + 2;
+            continue;
         }
 
         if (startswith(input_char_pointer, "==") || 
