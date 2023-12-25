@@ -26,6 +26,12 @@ int main(int argc, char **argv) {
         }
     }
 
+    printf(".data\n"); // データセグメントの開始(文字列リテラルの定義)
+    for (StringToken *s = strings; s; s = s->next) {
+        printf(".LC_%d:\n", s->index);
+        printf("    .string \"%s\"\n", s->value);
+    }
+
     printf(".text\n"); // プログラムの実行部分の開始
     current_func = 0;
     for (int i = 0; code[i]; i++) {

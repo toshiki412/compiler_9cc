@@ -8,6 +8,8 @@ Variable *globals[100];
 
 int current_func = 0;
 
+StringToken *strings;
+
 Node *new_node(NodeKind kind) {
     Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
     node->kind = kind;
@@ -24,6 +26,12 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
 Node *new_node_num(int val) {
     Node *node = new_node(ND_NUM);
     node->val = val;
+    return node;
+}
+
+Node *new_node_string(StringToken *s) {
+    Node *node = new_node(ND_STRING);
+    node->string = s;
     return node;
 }
 
@@ -308,6 +316,21 @@ Node *primary() {
 
         //関数呼び出しではない場合、変数。
         return variable(tok);
+    }
+
+    if (tok = consume_kind(TK_STRING)) {
+        StringToken *s = static_cast<StringToken*>(calloc(1,sizeof(StringToken)));
+        s->value = static_cast<char*>(calloc(100,sizeof(char)));
+        memcpy(s->value, tok->str, tok->len);
+        if (strings) {
+            s->index = strings->index + 1;
+        } else {
+            s->index = 0;
+        }
+        s->next = strings;
+        strings = s;
+
+        return new_node_string(s);
     }
 
     // そうでなければ数値のはず

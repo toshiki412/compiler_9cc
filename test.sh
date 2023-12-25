@@ -20,6 +20,17 @@ assert(){
     fi
 }
 
+# string test
+# 98‚Íb‚ÌasciiƒR[ƒh
+assert 98 "
+int main() {
+    char *a;
+    a = \"abc\";
+    printf(a);
+    return a[1];
+}"
+
+
 # char test
 
 assert 1 "
@@ -35,7 +46,6 @@ int main() {
     a[1] = 6;
     return a[0] + a[1];
 }"
-
 
 assert 3 "
 int main() { 
