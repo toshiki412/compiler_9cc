@@ -13,6 +13,7 @@ TK_FOR,         //for
 TK_WHILE,       //while
 TK_TYPE,        //型
 TK_SIZEOF,      //sizeof
+TK_STRING,      //文字列
 TK_EOF,         //入力の終わりを表すトークン
 } TokenKind;
 

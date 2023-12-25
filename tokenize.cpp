@@ -192,6 +192,26 @@ Token *tokenize() {
             continue;
         }
 
+        if ('"' == *input_char_pointer) {
+            // "HELLO"の場合、input_char_pointerは"を指している
+
+            // input_char_pointerをHにする
+            input_char_pointer++;
+
+            // cが最後の"を指すまで進める
+            char *c = input_char_pointer;
+            while ('"' != *c) {
+                c++;
+            }
+            int len = c - input_char_pointer; // lenはHELLOの文字数
+
+            cur = new_token(TK_STRING, cur, input_char_pointer, len);
+
+            // input_char_pointerは"の次の文字を指す
+            input_char_pointer = c + 1;
+            continue;
+        }
+
         error_at(input_char_pointer, "Cannot tokenize");
     }
 

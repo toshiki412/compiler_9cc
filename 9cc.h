@@ -25,3 +25,4 @@ extern Variable *globals[];
 
 extern int current_func;
 extern Node *code[];
+extern StringToken *strings;

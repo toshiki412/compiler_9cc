@@ -16,8 +16,8 @@ typedef enum {
     ND_LE,          // <=
     ND_ASSIGN,      // =
     ND_LOCAL_VARIABLE,  // ローカル変数
-    ND_GLOBAL_VARIABLE_DEF,  // グローバル変数の定義
-    ND_GLOBAL_VARIABLE_USE,  // グローバル変数の使用
+    ND_GLOBAL_VARIABLE_DEF,  // グローバル変数の定義 int x; のようなもの
+    ND_GLOBAL_VARIABLE_USE,  // グローバル変数の使用 x = 1; のようなもの
     ND_NUM,         // 整数
     ND_RETURN,
     ND_IF,
@@ -29,8 +29,9 @@ typedef enum {
     ND_BLOCK,       //{}
     ND_FUNC_CALL,   //関数呼び出し
     ND_FUNC_DEF,    //関数定義
-    ND_ADDR,    //アドレス &
-    ND_DEREF,    //参照先の値 *
+    ND_ADDR,        //アドレス &
+    ND_DEREF,       //参照先の値 *
+    ND_STRING,      // 文字列
 } NodeKind;
 
 typedef struct Type Type;
@@ -46,6 +47,12 @@ struct Type {
     size_t array_size; // tyがARRAYのとき配列のサイズ
 };
 
+typedef struct StringToken StringToken;
+struct StringToken {
+    int index;
+    char *value;
+    StringToken *next;
+};
 
 //抽象構文木のノードの型
 typedef struct Node Node;
@@ -59,8 +66,9 @@ struct Node {
     int val;        //kindがND_NUMのとき使う
     int offset;     //kindがND_Variableのとき使う
     Type *type;     //kindがND_Variableのとき使う
-    char *variable_name; //kindがND_GlobalVariable, Variableのとき使う
+    char *variable_name; //kindがND_GlobalVariable, ND_LOCAL_VARIABLEのとき使う
     int byte_size;   //kindがND_GlobalVariableのとき使う
+    StringToken *string; //kindがND_STRINGのとき使う
 };
 
 typedef struct Variable Variable;
@@ -85,6 +93,7 @@ struct DefineFuncOrVariable {
 Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+Node *new_node_string(StringToken *s);
 
 void program();
 Node *func();

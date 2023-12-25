@@ -35,6 +35,9 @@ void gen(Node *node) {
     int func_arg_num = 0;
 
     switch (node->kind) {
+    case ND_STRING:
+    printf("    push offset .LC_%d\n", node->string->index);
+        return;
     case ND_ADDR:
         gen_variable(node->lhs);
         return;
@@ -102,7 +105,7 @@ void gen(Node *node) {
         printf("    jmp .L.end.%03d\n", labelId);
         printf(".L.call.%03d:\n", labelId);
         printf("    sub rsp, 8\n");                 // rspを16の倍数にするために8バイト分ずらす
-        printf("    mov rax, 0\n");
+        printf("    mov rax, 0\n");                 // alは0にする
         printf("    call %s\n", node->func_name);    //関数呼び出し
         printf("    add rsp, 8\n");                 // 8バイトずらしたrspを元に戻す
         printf(".L.end.%03d:\n", labelId);
