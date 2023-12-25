@@ -20,6 +20,35 @@ assert(){
     fi
 }
 
+# char test
+
+assert 1 "
+int main() {
+    char a;
+    return sizeof(a);
+}"
+
+assert 11 "
+int main() {
+    char a[3];
+    a[0] = 5;
+    a[1] = 6;
+    return a[0] + a[1];
+}"
+
+
+assert 3 "
+int main() { 
+    char x[3];
+    x[0] = -1;
+    x[1] = 2;
+    int y;
+    y = 4;
+    return x[0] + y;
+}"
+
+
+
 # global variable test
 assert 3 "
 int x;
@@ -310,7 +339,7 @@ assert 35 "int main() { return piyo(5, 9, 21); }"
 # address, dereference test
 assert 3 "int main() {
     int x;
-    int y;
+    int *y;
     x = 3;
     y = &x;
     return *y;
@@ -319,10 +348,10 @@ assert 3 "int main() {
 assert 3 "int main() {
     int x;
     int y;
-    int z;
+    int *z;
     x = 3;
     y = 5;
-    z = &y + 8;
+    z = &y + 4;
     return *z;
 }"
 

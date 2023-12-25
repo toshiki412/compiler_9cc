@@ -116,6 +116,7 @@ ReservedWord reserved_words[] = {
     {"while", TK_WHILE},
     {"for", TK_FOR},
     {"int", TK_TYPE},
+    {"char", TK_TYPE},
     {"sizeof", TK_SIZEOF},
     {"", TK_EOF},
 };
