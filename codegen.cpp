@@ -33,6 +33,7 @@ void gen(Node *node) {
     gen_counter += 1;
     int labelId = gen_counter;
     int func_arg_num = 0;
+    Type *type;
 
     switch (node->kind) {
     case ND_STRING:
@@ -43,8 +44,15 @@ void gen(Node *node) {
         return;
     case ND_DEREF:
         gen(node->lhs);
+        type = get_type(node);
         printf("    pop rax\n");
-        printf("    mov rax, [rax]\n");
+        if (type && type->ty == Type::CHAR) {
+            printf("    movsx rax, BYTE PTR [rax]\n");
+        } else if (type && type->ty == Type::INT) {
+            printf("    movsxd rax, DWORD PTR [rax]\n");
+        } else {
+            printf("    mov rax, [rax]\n");
+        }
         printf("    push rax\n");
         return;
     case ND_FUNC_DEF:
@@ -177,13 +185,14 @@ void gen(Node *node) {
     case ND_LOCAL_VARIABLE:
     case ND_GLOBAL_VARIABLE_USE:
         gen_variable(node);
-        if (node->type && node->type->ty == Type::ARRAY) {
+        type = get_type(node);
+        if (type && type->ty == Type::ARRAY) {
             return;
         }
         printf("    pop rax\n");
-        if (node->type && node->type->ty == Type::CHAR) {
+        if (type && type->ty == Type::CHAR) {
             printf("    movsx rax, BYTE PTR [rax]\n");
-        } else if (node->type && node->type->ty == Type::INT) {
+        } else if (type && type->ty == Type::INT) {
             printf("    movsxd rax, DWORD PTR [rax]\n");
         } else {
             printf("    mov rax, [rax]\n");
@@ -197,11 +206,13 @@ void gen(Node *node) {
     case ND_ASSIGN:
         gen_variable(node->lhs);
         gen(node->rhs);
+        type = get_type(node);
+
         printf("    pop rdi\n");
         printf("    pop rax\n");
-        if (node->lhs->type && node->lhs->type->ty == Type::CHAR) {
+        if (type && type->ty == Type::CHAR) {
             printf("    mov [rax], dil\n");
-        } else if (node->lhs->type && node->lhs->type->ty == Type::INT) {
+        } else if (type && type->ty == Type::INT) {
             printf("    mov [rax], edi\n");
         } else {
             printf("    mov [rax], rdi\n");
