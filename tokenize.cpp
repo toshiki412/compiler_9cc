@@ -6,6 +6,39 @@ Token *token;
 // 入力プログラム
 char *user_input;
 
+// 入力ファイル名
+char *filename;
+
+char *read_file(char *path) {
+    FILE *fp = fopen(path, "r");
+    if (!fp) {
+        error("cannot open %s: %s", path, strerror(errno));
+    }
+
+    // ファイルの長さを調べる
+    if (fseek(fp, 0, SEEK_END) == -1) {
+        error("%s: fseek: %s", path, strerror(errno));
+    }
+    size_t size = ftell(fp);
+    if (fseek(fp, 0, SEEK_SET) == -1) {
+        error("%s: fseek: %s", path, strerror(errno));
+    }
+
+    // ファイルの内容を読み込む
+    char *buf = static_cast<char*>(calloc(1, size + 2)); // +2は最後にNULLを入れるため
+
+    // fread(読み込む先のポインタ, 1回に読み込むバイト数, 読み込む回数, ファイルストリーム)
+    fread(buf, size, 1, fp);
+
+    // ファイルが必ず"\n\0"で終わるようにする
+    if (size == 0 || buf[size - 1] != '\n') {
+        buf[size++] = '\n';
+    }
+    buf[size] = '\0';
+    fclose(fp);
+    return buf;
+}
+
 
 //エラーを報告するための関数
 //locはエラーが発生した位置
@@ -13,10 +46,32 @@ void error_at(char *loc, const char *fmt, ...) {
     va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
     va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
 
-    //posはlocがuser_inputからどれだけ離れているかを表すオフセット
-    int pos = loc - user_input;
-    fprintf(stderr, "%s\n", user_input);
-    fprintf(stderr, "%*s", pos, "");
+    // locが含まれている行の開始地点と終了地点を取得
+    char *line = loc;
+    while (user_input < line && line[-1] != '\n') {
+        line--;
+    }
+
+    char *end = loc;
+    while (*end != '\n') {
+        end++;
+    }
+
+    // 見つかった行が全体の何行目なのかを調べる
+    int line_num = 1;
+    for (char *p = user_input; p < line; p++) {
+        if (*p == '\n') {
+            line_num++;
+        }
+    }
+
+    // 見つかった行を、ファイル名と行番号と一緒に表示
+    int indent = fprintf(stderr, "%s:%d: ", filename, line_num);
+    fprintf(stderr, "%.*s\n", (int)(end - line), line);
+
+    // エラー箇所を"^"で指し示して、エラーメッセージを表示
+    int pos = loc - line + indent;
+    fprintf(stderr, "%*s", pos, ""); //posの数だけ空白を出力
     fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
@@ -134,8 +189,28 @@ Token *tokenize() {
     while (*input_char_pointer) {
         // 空白文字をスキップ
         if (isspace(*input_char_pointer)) {
-        input_char_pointer++;
-        continue;
+            input_char_pointer++;
+            continue;
+        }
+
+        // 行コメントをスキップ
+        if (startswith(input_char_pointer, "//")) {
+            input_char_pointer += 2;
+            while (*input_char_pointer != '\n') {
+                input_char_pointer++;
+            }
+            continue;
+        }
+
+        // ブロックコメントをスキップ
+        if (startswith(input_char_pointer, "/*")) {
+            // strstr(文字列, 検索文字列)は文字列から検索文字列を探し、その先頭へのポインタを返す
+            char *p = strstr(input_char_pointer + 2, "*/");
+            if (!p) {
+                error_at(input_char_pointer, "コメントが閉じられていません");
+            }
+            input_char_pointer = p + 2;
+            continue;
         }
 
         if (startswith(input_char_pointer, "==") || 

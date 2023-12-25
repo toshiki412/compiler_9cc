@@ -20,6 +20,25 @@ assert(){
     fi
 }
 
+# comment test
+assert 0 "
+int main() {
+    int x;
+    x = 0;
+    // x = 1;
+    return x; 
+}"
+
+assert 2 "
+int main() {
+    int x;
+    x = 2;
+    /*
+     x = 1; 
+    */
+    return x; 
+}"
+
 # string test
 # 98‚Íb‚ÌasciiƒR[ƒh
 assert 98 "
