@@ -403,11 +403,12 @@ Node *initialize_local_variable(Node *node) {
 
     // int x[] = {1,2,3} のような場合
     Node *assign_arr;
+
     if (node->type->ty == Type::ARRAY && node->variable->init_value->block) {
         Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
         block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
         block_node->kind = ND_BLOCK;
-        
+
         for (int i = 0; node->variable->init_value->block[i]; i++) {
             // add = a[0]
             Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
@@ -428,6 +429,44 @@ Node *initialize_local_variable(Node *node) {
             assign_arr->kind = ND_ASSIGN;
             assign_arr->lhs = deref;
             assign_arr->rhs = node->variable->init_value->block[i];
+
+            block_node->block[i] = assign_arr;
+        }
+        return block_node;
+    }
+
+    // arr[] = "foo"のような場合
+    // これはarr[] = {'f','o','o','\0'}と同じ
+    if (node->variable->init_value->kind == ND_STRING) {
+        Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        block_node->kind = ND_BLOCK;
+
+        int len = strlen(node->variable->init_value->string->value) + 1;
+
+        for (int i = 0; i < node->type->array_size; i++) {
+            // add = a[0]
+            Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
+            add->kind = ND_ADD;
+            add->lhs = node;
+            if (node->type && node->type->ty != Type::INT) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 
+                        : node->type->ptr_to->ty == Type::CHAR ? 1
+                        : 8;
+                add->rhs = new_node_num(n * i); // n*iは配列の要素のサイズ
+            }
+            Node *deref = static_cast<Node*>(calloc(1,sizeof(Node)));
+            deref->kind = ND_DEREF;
+            deref->lhs = add;
+
+            // = {1,2,3}の1や2や3の部分
+            assign_arr = static_cast<Node*>(calloc(1,sizeof(Node)));
+            assign_arr->kind = ND_ASSIGN;
+            assign_arr->lhs = deref;
+            assign_arr->rhs = 
+                node->variable->init_value->string->value[i] == '\0' 
+                ? new_node_num(0) 
+                : new_node_num(node->variable->init_value->string->value[i]);
 
             block_node->block[i] = assign_arr;
         }
@@ -458,9 +497,12 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
         t->ty = Type::ARRAY;
         t->ptr_to = type;
-        t->array_size = expect_number();
+        Token *array_num = NULL;
+        t->array_size = 0;
+        if (array_num = consume_kind(TK_NUM)) {
+            t->array_size = array_num->val;
+        }
         type = t;
-        size *= t->array_size;
         expect("]");
     }
 
@@ -472,18 +514,41 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
             // int a[3] = {1,2,3} のような場合
             init_value = static_cast<Node*>(calloc(1,sizeof(Node)));
             init_value->block = static_cast<Node**>(calloc(10,sizeof(Node)));
-            for (int i = 0; !consume("}"); i++) {
+            int i;
+            for (i = 0; !consume("}"); i++) {
                 init_value->block[i] = expr();
                 if (consume("}")) {
                     break;
                 }
                 expect(",");
             }
+            if (type->array_size < i) { // arr[] = {1,2} のような場合
+                type->array_size = i + 1;
+            }
+            for (i = i + 1; i < type->array_size; i++) { // arr[5] = {1,2} のような場合
+                init_value->block[i] = new_node_num(0);
+            }
         } else {
             // 定数式の場合
             // int a = 3; のような場合
             init_value = expr();
+
+            // stringの場合
+            // char arr[] = "abc"; のような場合
+            if (init_value->kind == ND_STRING) {
+                int len = strlen(init_value->string->value) + 1;
+                if (type->array_size < len) {
+                    type->array_size = len;
+                }
+            }
         }
+    }
+
+    if (type->ty == Type::ARRAY) {
+        if (type->array_size == 0) {
+            error("array size is not specified.");
+        }
+        size *= type->array_size;
     }
 
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));

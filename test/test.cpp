@@ -331,11 +331,34 @@ int test_gvar_init() {
 int test_lvar_init() {
   int a = 10;
   int b[3] = {1, 2, bar(9, 4)};
+  int c[] = {2, 3};
+  int d[5] = {8};
+  char abc[10] = "abc";
+  char efg[] = "efg";
 
   assert(10, a);
+
   assert(1, b[0]);
   assert(2, b[1]);
   assert(13, b[2]);
+
+  assert(2, c[0]);
+  assert(3, c[1]);
+
+  assert(8, d[0]);
+  assert(0, d[1]);
+  assert(0, d[4]);
+
+  assert(97, abc[0]); //'a'のasciiは97
+  assert(98, abc[1]); //'b'のasciiは98
+  assert(99, abc[2]); //'c'のasciiは99
+  assert(0, abc[3]); //文字列の終端は0
+  assert(0, abc[9]);
+
+  assert(101, efg[0]); //'e'のasciiは101
+  assert(102, efg[1]); //'f'のasciiは102
+  assert(103, efg[2]); //'g'のasciiは103
+  assert(0, efg[3]); //文字列の終端は0
 }
 
 int main() {
