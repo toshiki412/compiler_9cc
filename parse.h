@@ -17,7 +17,6 @@ typedef enum {
     ND_LE,                  // <=
     ND_ASSIGN,              // =
     ND_LOCAL_VARIABLE,      // ローカル変数
-    ND_LOCAL_VARIABLE_DEF,  // ローカル変数の定義 int x; のようなもの
     ND_GLOBAL_VARIABLE_DEF, // グローバル変数の定義 int x; のようなもの
     ND_GLOBAL_VARIABLE_USE, // グローバル変数の使用 x = 1; のようなもの
     ND_NUM,                 // 整数

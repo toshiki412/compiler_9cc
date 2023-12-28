@@ -330,7 +330,12 @@ int test_gvar_init() {
 // ローカル変数の初期化式のテスト
 int test_lvar_init() {
   int a = 10;
+  int b[3] = {1, 2, bar(9, 4)};
+
   assert(10, a);
+  assert(1, b[0]);
+  assert(2, b[1]);
+  assert(13, b[2]);
 }
 
 int main() {

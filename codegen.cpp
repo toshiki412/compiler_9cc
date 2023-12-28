@@ -8,7 +8,7 @@ void gen_variable(Node *node) {
         return;
     }
 
-    if (node->kind == ND_LOCAL_VARIABLE || node->kind == ND_LOCAL_VARIABLE_DEF) {
+    if (node->kind == ND_LOCAL_VARIABLE) {
         printf("    mov rax, rbp\n");
         printf("    sub rax, %d\n", node->offset);
         printf("    push rax\n");
@@ -243,25 +243,6 @@ void gen(Node *node) {
 
         // ’è”Ž®‚Ì‰Šú‰»Ž®‚ª‚ ‚éê‡
         printf("    .long 0x%x\n", node->variable->init_value->num_value);
-        return;
-    case ND_LOCAL_VARIABLE_DEF:
-        if (!node->variable->init_value) {
-            return;
-        }
-        gen_variable(node);
-        gen(node->variable->init_value);
-        type = get_type(node);
-
-        printf("    pop rdi\n");
-        printf("    pop rax\n");
-        if (type && type->ty == Type::CHAR) {
-            printf("    mov [rax], dil\n");
-        } else if (type && type->ty == Type::INT) {
-            printf("    mov [rax], edi\n");
-        } else {
-            printf("    mov [rax], rdi\n");
-        }
-        printf("    push rdi\n");
         return;
     case ND_ASSIGN:
         gen_variable(node->lhs);

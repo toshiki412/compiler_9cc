@@ -401,6 +401,39 @@ Node *initialize_local_variable(Node *node) {
         return node;
     }
 
+    // int x[] = {1,2,3} のような場合
+    Node *assign_arr;
+    if (node->type->ty == Type::ARRAY && node->variable->init_value->block) {
+        Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        block_node->kind = ND_BLOCK;
+        
+        for (int i = 0; node->variable->init_value->block[i]; i++) {
+            // add = a[0]
+            Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
+            add->kind = ND_ADD;
+            add->lhs = node;
+            if (node->type && node->type->ty != Type::INT) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 
+                        : node->type->ptr_to->ty == Type::CHAR ? 1
+                        : 8;
+                add->rhs = new_node_num(n * i); // n*iは配列の要素のサイズ
+            }
+            Node *deref = static_cast<Node*>(calloc(1,sizeof(Node)));
+            deref->kind = ND_DEREF;
+            deref->lhs = add;
+
+            // = {1,2,3}の1や2や3の部分
+            assign_arr = static_cast<Node*>(calloc(1,sizeof(Node)));
+            assign_arr->kind = ND_ASSIGN;
+            assign_arr->lhs = deref;
+            assign_arr->rhs = node->variable->init_value->block[i];
+
+            block_node->block[i] = assign_arr;
+        }
+        return block_node;
+    }
+
     // int a = 10; の a = 10を作る
     // aはnodeに入っていて, 10はnode->variable->init_valueに入っている
     Node *assign = static_cast<Node*>(calloc(1,sizeof(Node)));
