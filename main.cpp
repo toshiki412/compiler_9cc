@@ -20,14 +20,20 @@ int main(int argc, char **argv) {
     printf(".intel_syntax noprefix\n");
     printf(".bss\n"); // データセグメントの開始(グローバル変数の定義)
     
-    // グローバル変数の定義
+    // グローバル変数の定義 初期化式がない場合
     for (int i = 0; code[i]; i++) {
-        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF) {
+        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF && !code[i]->variable->init) {
             gen(code[i]);
         }
     }
 
     printf(".data\n"); // データセグメントの開始(文字列リテラルの定義)
+    // グローバル変数の定義 初期化式がある場合
+    for (int i = 0; code[i]; i++) {
+        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF && code[i]->variable->init) {
+            gen(code[i]);
+        }
+    }
     for (StringToken *s = strings; s; s = s->next) {
         printf(".LC_%d:\n", s->index);
         printf("    .string \"%s\"\n", s->value);
