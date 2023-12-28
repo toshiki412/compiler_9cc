@@ -180,7 +180,7 @@ void gen(Node *node) {
         printf("    ret\n");
         return;
     case ND_NUM:
-        printf("    push %d\n", node->val);
+        printf("    push %d\n", node->num_value);
         return;
     case ND_LOCAL_VARIABLE:
     case ND_GLOBAL_VARIABLE_USE:
@@ -201,7 +201,48 @@ void gen(Node *node) {
         return;
     case ND_GLOBAL_VARIABLE_DEF:
         printf("%s:\n", node->variable_name);
-        printf("    .zero %d\n", node->byte_size);
+        // 初期化式がない場合
+        if (node->variable->init == NULL) {
+            printf("    .zero %d\n", node->byte_size);
+            return;
+        }
+
+        // 配列の初期化式の場合
+        if (node->type->ty == Type::ARRAY && node->variable->init->block) {
+            for (int i = 0; node->variable->init->block[i]; i++) {
+                switch (node->type->ptr_to->ty) {
+                case Type::INT:
+                    printf("    .long %x\n", node->variable->init->block[i]->num_value);
+                    break;
+                case Type::CHAR:
+                    printf("    .byte %x\n", node->variable->init->block[i]->num_value);
+                    break;
+                case Type::PTR:
+                    printf("    .quad %x\n", node->variable->init->block[i]->num_value);
+                    break;
+                default:
+                    break;
+                }
+            }
+            return;
+        }
+
+        // char *g = "abc"; のような場合 アセンブリは以下のようになる
+        // .LC_1:
+        //     .string "abc"
+        // g:
+        //     .quad .LC_1
+        if (node->variable->init->kind == ND_STRING) {
+            if (node->type->ty == Type::ARRAY) {
+                printf("    .string \"%s\"\n", node->variable->init->string->value);
+            } else {
+                printf("    .quad .LC_%d\n", node->variable->init->string->index);
+            }
+            return;
+        }
+
+        // 定数式の初期化式がある場合
+        printf("    .long %d\n", node->variable->init->num_value);
         return;
     case ND_ASSIGN:
         gen_variable(node->lhs);

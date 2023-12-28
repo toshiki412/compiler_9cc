@@ -56,6 +56,7 @@ struct StringToken {
 
 //抽象構文木のノードの型
 typedef struct Node Node;
+struct Variable;
 struct Node {
     NodeKind kind;
     Node *lhs;      //左辺
@@ -63,15 +64,17 @@ struct Node {
     Node **block;   //kindがND_BLOCKのとき使う ブロックに含まれる式を持つベクタ
     char *func_name; //kindがND_FUNCのとき使う
     Node **func_args;    //kindがND_FUNC_DEFのとき使う
-    int val;        //kindがND_NUMのとき使う
+    int num_value;        //kindがND_NUMのとき使う
     int offset;     //kindがND_Variableのとき使う
     Type *type;     //kindがND_Variableのとき使う
     char *variable_name; //kindがND_GlobalVariable, ND_LOCAL_VARIABLEのとき使う
     int byte_size;   //kindがND_GlobalVariableのとき使う
     StringToken *string; //kindがND_STRINGのとき使う
+    Variable *variable;       //kindがND_GLOBAL_VARIABLE_DEFのとき使う
 };
 
 typedef struct Variable Variable;
+struct Node;
 struct Variable {
     Variable *next; // 次の変数かNULL
     char *name; // 変数の名前
@@ -82,6 +85,7 @@ struct Variable {
         LOCAL_VARIABLE,
         GLOBAL_VARIABLE,
     } kind;
+    Node *init; // 初期化式
 };
 
 typedef struct DefineFuncOrVariable DefineFuncOrVariable;
@@ -92,7 +96,7 @@ struct DefineFuncOrVariable {
 
 Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
-Node *new_node_num(int val);
+Node *new_node_num(int num_value);
 Node *new_node_string(StringToken *s);
 
 void program();

@@ -23,9 +23,9 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
-Node *new_node_num(int val) {
+Node *new_node_num(int num_value) {
     Node *node = new_node(ND_NUM);
-    node->val = val;
+    node->num_value = num_value;
     return node;
 }
 
@@ -396,6 +396,7 @@ DefineFuncOrVariable *read_define_first_half() {
 }
 
 // まだ定義されていない変数の定義を行う
+// int *foo; int *foo() {} などがあった場合、int *fooの部分までがdef_first_half
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
     if (def_first_half == NULL) {
         error("invalid def_first_half variable.");
@@ -413,6 +414,28 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         type = t;
         size *= t->array_size;
         expect("]");
+    }
+
+    // 初期化式
+    Node *init = NULL;
+    if (consume("=")) {
+        if (consume("{")) {
+            // 配列の初期化
+            // int a[3] = {1,2,3} のような場合
+            init = static_cast<Node*>(calloc(1,sizeof(Node)));
+            init->block = static_cast<Node**>(calloc(10,sizeof(Node)));
+            for (int i = 0; !consume("}"); i++) {
+                init->block[i] = expr();
+                if (consume("}")) {
+                    break;
+                }
+                expect(",");
+            }
+        } else {
+            // 定数式の場合
+            // int a = 3; のような場合
+            init = expr();
+        }
     }
 
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
@@ -436,6 +459,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     local_variable->next = variable_list[current_func];
     local_variable->name = def_first_half->ident->str;
     local_variable->len = def_first_half->ident->len;
+    local_variable->init = init;
     if (variable_list[current_func] == NULL) {
         local_variable->offset = 8;
     } else {
@@ -445,6 +469,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
 
     node->offset = local_variable->offset;
     node->type = local_variable->type;
+    node->variable = local_variable;
     variable_list[current_func] = local_variable;
     char name[100] = {0};
     memcpy(name, def_first_half->ident->str, def_first_half->ident->len);
