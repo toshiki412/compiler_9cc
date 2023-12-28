@@ -5,7 +5,7 @@ int global_a;
 int global_b[10];
 int global_var_init = 3;
 int global_array_init[5] = {0, 1, 2, 3, 4};
-char global_char_init[5] = {5, 6, 7, 8, 9};
+char global_char_init[5] = {5, 6, 7, 8, 11};
 char *global_message = "foo";
 char global_message_array[4] = "bar";
 
@@ -310,7 +310,7 @@ int test_string() {
   assert(98, a[1]); // 98はasciiの'b'
 }
 
-// 初期化式のテスト
+// グローバル変数の初期化式のテスト
 int test_gvar_init() {
   assert(3, global_var_init);
 
@@ -318,13 +318,47 @@ int test_gvar_init() {
   assert(4, global_array_init[4]);
 
   assert(5, global_char_init[0]);
-  assert(9, global_char_init[4]);
+  assert(11, global_char_init[4]);
 
   assert(102, global_message[0]); //'f'のasciiは102
   assert(111, global_message[1]); //'o'のasciiは111
   
   assert(98, global_message_array[0]); //'b'のasciiは98
   assert(114, global_message_array[2]); //'r'のasciiは97
+}
+
+// ローカル変数の初期化式のテスト
+int test_lvar_init() {
+  int a = 10;
+  int b[3] = {1, 2, bar(9, 4)};
+  int c[] = {2, 3};
+  int d[5] = {8};
+  char abc[10] = "abc";
+  char efg[] = "efg";
+
+  assert(10, a);
+
+  assert(1, b[0]);
+  assert(2, b[1]);
+  assert(13, b[2]);
+
+  assert(2, c[0]);
+  assert(3, c[1]);
+
+  assert(8, d[0]);
+  assert(0, d[1]);
+  assert(0, d[4]);
+
+  assert(97, abc[0]); //'a'のasciiは97
+  assert(98, abc[1]); //'b'のasciiは98
+  assert(99, abc[2]); //'c'のasciiは99
+  assert(0, abc[3]); //文字列の終端は0
+  assert(0, abc[9]);
+
+  assert(101, efg[0]); //'e'のasciiは101
+  assert(102, efg[1]); //'f'のasciiは102
+  assert(103, efg[2]); //'g'のasciiは103
+  assert(0, efg[3]); //文字列の終端は0
 }
 
 int main() {
@@ -350,6 +384,7 @@ int main() {
   test_char();
   test_string();
   test_gvar_init();
+  test_lvar_init();
 
   printf("OK\n");
   return 0;

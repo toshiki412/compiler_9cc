@@ -12,3 +12,6 @@ $ chmod +x test.sh
 $ ./test.sh
 あるいは
 $ make test
+
+実行
+./9cc filename

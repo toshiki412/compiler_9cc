@@ -164,6 +164,7 @@ Node *stmt() {
     DefineFuncOrVariable *def_first_half = read_define_first_half();
     if (def_first_half) {
         node = define_variable(def_first_half, locals);
+        node = initialize_local_variable(node);
         expect(";");
         return node;
     }
@@ -395,10 +396,96 @@ DefineFuncOrVariable *read_define_first_half() {
     return def_first_half;
 }
 
+Node *initialize_local_variable(Node *node) {
+    if (!node->variable->init_value) {
+        return node;
+    }
+
+    // int x[] = {1,2,3} のような場合
+    Node *assign_arr;
+
+    if (node->type->ty == Type::ARRAY && node->variable->init_value->block) {
+        Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        block_node->kind = ND_BLOCK;
+
+        for (int i = 0; node->variable->init_value->block[i]; i++) {
+            // add = a[0]
+            Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
+            add->kind = ND_ADD;
+            add->lhs = node;
+            if (node->type && node->type->ty != Type::INT) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 
+                        : node->type->ptr_to->ty == Type::CHAR ? 1
+                        : 8;
+                add->rhs = new_node_num(n * i); // n*iは配列の要素のサイズ
+            }
+            Node *deref = static_cast<Node*>(calloc(1,sizeof(Node)));
+            deref->kind = ND_DEREF;
+            deref->lhs = add;
+
+            // = {1,2,3}の1や2や3の部分
+            assign_arr = static_cast<Node*>(calloc(1,sizeof(Node)));
+            assign_arr->kind = ND_ASSIGN;
+            assign_arr->lhs = deref;
+            assign_arr->rhs = node->variable->init_value->block[i];
+
+            block_node->block[i] = assign_arr;
+        }
+        return block_node;
+    }
+
+    // arr[] = "foo"のような場合
+    // これはarr[] = {'f','o','o','\0'}と同じ
+    if (node->variable->init_value->kind == ND_STRING) {
+        Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        block_node->kind = ND_BLOCK;
+
+        int len = strlen(node->variable->init_value->string->value) + 1;
+
+        for (int i = 0; i < node->type->array_size; i++) {
+            // add = a[0]
+            Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
+            add->kind = ND_ADD;
+            add->lhs = node;
+            if (node->type && node->type->ty != Type::INT) {
+                int n = node->type->ptr_to->ty == Type::INT ? 4 
+                        : node->type->ptr_to->ty == Type::CHAR ? 1
+                        : 8;
+                add->rhs = new_node_num(n * i); // n*iは配列の要素のサイズ
+            }
+            Node *deref = static_cast<Node*>(calloc(1,sizeof(Node)));
+            deref->kind = ND_DEREF;
+            deref->lhs = add;
+
+            // = {1,2,3}の1や2や3の部分
+            assign_arr = static_cast<Node*>(calloc(1,sizeof(Node)));
+            assign_arr->kind = ND_ASSIGN;
+            assign_arr->lhs = deref;
+            assign_arr->rhs = 
+                node->variable->init_value->string->value[i] == '\0' 
+                ? new_node_num(0) 
+                : new_node_num(node->variable->init_value->string->value[i]);
+
+            block_node->block[i] = assign_arr;
+        }
+        return block_node;
+    }
+
+    // int a = 10; の a = 10を作る
+    // aはnodeに入っていて, 10はnode->variable->init_valueに入っている
+    Node *assign = static_cast<Node*>(calloc(1,sizeof(Node)));
+    assign->kind = ND_ASSIGN;
+    assign->lhs = node;
+    assign->rhs = node->variable->init_value;
+    return assign;
+}
+
 // まだ定義されていない変数の定義を行う
 // int *foo; int *foo() {} などがあった場合、int *fooの部分までがdef_first_half
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
-    if (def_first_half == NULL) {
+    if (!def_first_half) {
         error("invalid def_first_half variable.");
     }
 
@@ -410,32 +497,58 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
         t->ty = Type::ARRAY;
         t->ptr_to = type;
-        t->array_size = expect_number();
+        Token *array_num = NULL;
+        t->array_size = 0;
+        if (array_num = consume_kind(TK_NUM)) {
+            t->array_size = array_num->val;
+        }
         type = t;
-        size *= t->array_size;
         expect("]");
     }
 
     // 初期化式
-    Node *init = NULL;
+    Node *init_value = NULL;
     if (consume("=")) {
         if (consume("{")) {
             // 配列の初期化
             // int a[3] = {1,2,3} のような場合
-            init = static_cast<Node*>(calloc(1,sizeof(Node)));
-            init->block = static_cast<Node**>(calloc(10,sizeof(Node)));
-            for (int i = 0; !consume("}"); i++) {
-                init->block[i] = expr();
+            init_value = static_cast<Node*>(calloc(1,sizeof(Node)));
+            init_value->block = static_cast<Node**>(calloc(10,sizeof(Node)));
+            int i;
+            for (i = 0; !consume("}"); i++) {
+                init_value->block[i] = expr();
                 if (consume("}")) {
                     break;
                 }
                 expect(",");
             }
+            if (type->array_size < i) { // arr[] = {1,2} のような場合
+                type->array_size = i + 1;
+            }
+            for (i = i + 1; i < type->array_size; i++) { // arr[5] = {1,2} のような場合
+                init_value->block[i] = new_node_num(0);
+            }
         } else {
             // 定数式の場合
             // int a = 3; のような場合
-            init = expr();
+            init_value = expr();
+
+            // stringの場合
+            // char arr[] = "abc"; のような場合
+            if (init_value->kind == ND_STRING) {
+                int len = strlen(init_value->string->value) + 1;
+                if (type->array_size < len) {
+                    type->array_size = len;
+                }
+            }
         }
+    }
+
+    if (type->ty == Type::ARRAY) {
+        if (type->array_size == 0) {
+            error("array size is not specified.");
+        }
+        size *= type->array_size;
     }
 
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
@@ -459,7 +572,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     local_variable->next = variable_list[current_func];
     local_variable->name = def_first_half->ident->str;
     local_variable->len = def_first_half->ident->len;
-    local_variable->init = init;
+    local_variable->init_value = init_value;
     if (variable_list[current_func] == NULL) {
         local_variable->offset = 8;
     } else {

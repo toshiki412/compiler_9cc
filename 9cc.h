@@ -15,7 +15,7 @@
 // グローバル変数
 extern char *user_input;        // 入力プログラム
 extern char *filename;          // 入力ファイル名
-extern Token *token;            //現在着目しているトークン
+extern Token *token;            // 現在着目しているトークン
 extern Variable *locals[];      // ローカル変数　localsを辿って変数名を見ていくことで既存の変数かどうかがわかる
 extern Variable *globals[];     // グローバル変数
 extern int current_func;        // ローカル関数の数

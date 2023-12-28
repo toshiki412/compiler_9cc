@@ -1,6 +1,6 @@
 #include "9cc.h"
 
-
+// 変数のアドレスをスタックに積む
 void gen_variable(Node *node) {
     // derefである場合 *p = 1; など
     if (node->kind == ND_DEREF) {
@@ -33,7 +33,7 @@ void gen(Node *node) {
     gen_counter += 1;
     int labelId = gen_counter;
     int func_arg_num = 0;
-    Type *type;
+    Type *type; //変数の型
 
     switch (node->kind) {
     case ND_STRING:
@@ -202,23 +202,23 @@ void gen(Node *node) {
     case ND_GLOBAL_VARIABLE_DEF:
         printf("%s:\n", node->variable_name);
         // 初期化式がない場合
-        if (node->variable->init == NULL) {
+        if (node->variable->init_value == NULL) {
             printf("    .zero %d\n", node->byte_size);
             return;
         }
 
         // 配列の初期化式の場合
-        if (node->type->ty == Type::ARRAY && node->variable->init->block) {
-            for (int i = 0; node->variable->init->block[i]; i++) {
+        if (node->type->ty == Type::ARRAY && node->variable->init_value->block) {
+            for (int i = 0; node->variable->init_value->block[i]; i++) {
                 switch (node->type->ptr_to->ty) {
                 case Type::INT:
-                    printf("    .long %x\n", node->variable->init->block[i]->num_value);
+                    printf("    .long 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
                 case Type::CHAR:
-                    printf("    .byte %x\n", node->variable->init->block[i]->num_value);
+                    printf("    .byte 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
                 case Type::PTR:
-                    printf("    .quad %x\n", node->variable->init->block[i]->num_value);
+                    printf("    .quad %x\n", node->variable->init_value->block[i]->num_value);
                     break;
                 default:
                     break;
@@ -232,17 +232,17 @@ void gen(Node *node) {
         //     .string "abc"
         // g:
         //     .quad .LC_1
-        if (node->variable->init->kind == ND_STRING) {
+        if (node->variable->init_value->kind == ND_STRING) {
             if (node->type->ty == Type::ARRAY) {
-                printf("    .string \"%s\"\n", node->variable->init->string->value);
+                printf("    .string \"%s\"\n", node->variable->init_value->string->value);
             } else {
-                printf("    .quad .LC_%d\n", node->variable->init->string->index);
+                printf("    .quad .LC_%d\n", node->variable->init_value->string->index);
             }
             return;
         }
 
         // 定数式の初期化式がある場合
-        printf("    .long %d\n", node->variable->init->num_value);
+        printf("    .long 0x%x\n", node->variable->init_value->num_value);
         return;
     case ND_ASSIGN:
         gen_variable(node->lhs);

@@ -20,11 +20,11 @@ TK_EOF,         //入力の終わりを表すトークン
 //トークン型
 typedef struct Token Token;
 struct Token {
-    TokenKind kind; //トークンの型
-    Token *next;    //次の入力トークン
-    int val;        //kindがTK_NUMのとき、その数値
-    char *str;      //トークン文字列
-    int len;        //トークンの長さ 識別子が一文字だけではなくなった(<, <=)
+    TokenKind kind; // トークンの型
+    Token *next;    // 次の入力トークン
+    int val;        // kindがTK_NUMのとき、その数値
+    char *str;      // トークン文字列
+    int len;        // トークンの長さ 識別子が一文字だけではなくなった(<, <=)
 };
 
 char *read_file(char *path);

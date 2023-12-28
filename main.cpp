@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     
     // グローバル変数の定義 初期化式がない場合
     for (int i = 0; code[i]; i++) {
-        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF && !code[i]->variable->init) {
+        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF && !code[i]->variable->init_value) {
             gen(code[i]);
         }
     }
@@ -30,10 +30,12 @@ int main(int argc, char **argv) {
     printf(".data\n"); // データセグメントの開始(文字列リテラルの定義)
     // グローバル変数の定義 初期化式がある場合
     for (int i = 0; code[i]; i++) {
-        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF && code[i]->variable->init) {
+        if (code[i]->kind == ND_GLOBAL_VARIABLE_DEF && code[i]->variable->init_value) {
             gen(code[i]);
         }
     }
+
+    // 文字列リテラルの定義
     for (StringToken *s = strings; s; s = s->next) {
         printf(".LC_%d:\n", s->index);
         printf("    .string \"%s\"\n", s->value);
