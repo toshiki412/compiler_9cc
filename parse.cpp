@@ -164,6 +164,7 @@ Node *stmt() {
     DefineFuncOrVariable *def_first_half = read_define_first_half();
     if (def_first_half) {
         node = define_variable(def_first_half, locals);
+        node = initialize_local_variable(node);
         expect(";");
         return node;
     }
@@ -395,10 +396,24 @@ DefineFuncOrVariable *read_define_first_half() {
     return def_first_half;
 }
 
+Node *initialize_local_variable(Node *node) {
+    if (!node->variable->init_value) {
+        return node;
+    }
+
+    // int a = 10; の a = 10を作る
+    // aはnodeに入っていて, 10はnode->variable->init_valueに入っている
+    Node *assign = static_cast<Node*>(calloc(1,sizeof(Node)));
+    assign->kind = ND_ASSIGN;
+    assign->lhs = node;
+    assign->rhs = node->variable->init_value;
+    return assign;
+}
+
 // まだ定義されていない変数の定義を行う
 // int *foo; int *foo() {} などがあった場合、int *fooの部分までがdef_first_half
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
-    if (def_first_half == NULL) {
+    if (!def_first_half) {
         error("invalid def_first_half variable.");
     }
 
@@ -417,15 +432,15 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     }
 
     // 初期化式
-    Node *init = NULL;
+    Node *init_value = NULL;
     if (consume("=")) {
         if (consume("{")) {
             // 配列の初期化
             // int a[3] = {1,2,3} のような場合
-            init = static_cast<Node*>(calloc(1,sizeof(Node)));
-            init->block = static_cast<Node**>(calloc(10,sizeof(Node)));
+            init_value = static_cast<Node*>(calloc(1,sizeof(Node)));
+            init_value->block = static_cast<Node**>(calloc(10,sizeof(Node)));
             for (int i = 0; !consume("}"); i++) {
-                init->block[i] = expr();
+                init_value->block[i] = expr();
                 if (consume("}")) {
                     break;
                 }
@@ -434,7 +449,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         } else {
             // 定数式の場合
             // int a = 3; のような場合
-            init = expr();
+            init_value = expr();
         }
     }
 
@@ -459,7 +474,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     local_variable->next = variable_list[current_func];
     local_variable->name = def_first_half->ident->str;
     local_variable->len = def_first_half->ident->len;
-    local_variable->init = init;
+    local_variable->init_value = init_value;
     if (variable_list[current_func] == NULL) {
         local_variable->offset = 8;
     } else {
