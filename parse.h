@@ -137,6 +137,7 @@ Node *define_variable(DefineFuncOrVariable *def, Variable **varlist);
 Node *variable(Token *tok);
 Member *find_member(Token *tok, Type *type);
 Variable *find_varable(Token *tok);
+int align_to(int n, int align);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 /*

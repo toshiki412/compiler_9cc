@@ -374,6 +374,15 @@ int test_struct() {
   assert(20, abc.b);
 }
 
+int test_sturct_alignment() {
+  struct {
+    int e;
+    char f;
+    int g;
+  } efg;
+
+}
+
 int main() {
 
   test_calc();
