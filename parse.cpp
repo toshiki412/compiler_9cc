@@ -375,6 +375,7 @@ Type *define_struct() {
     Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
     t->ty = STRUCT;
     int offset = 0;
+    int max_size = 0;
 
     while (!consume("}")) {
         DefineFuncOrVariable *def_first_half = read_define_first_half();
@@ -385,10 +386,16 @@ Type *define_struct() {
         m->name = static_cast<char*>(calloc(100,sizeof(char)));
         memcpy(m->name, def_first_half->ident->str, def_first_half->ident->len);
         m->type = def_first_half->type;
+        int size = get_size(def_first_half->type);
+        offset = align_to(offset, size);
         m->offset = offset;
-        offset += get_size(def_first_half->type);
+        offset += size;
         m->next = t->member_list;
         t->member_list = m;
+
+        if (max_size <= 8 && max_size < size) {
+            max_size = size;
+        }
     }
     t->byte_size = offset;
 
@@ -725,4 +732,15 @@ Variable *find_varable(Token *tok) {
 
     // どちらもなければNULLを返す
     return NULL;
+}
+
+// アライメントを揃える
+// struct {int a; char b1; char b2; int c;}
+// a 4byte
+// b1 1byte
+// b2 1byte
+//    2byte <- 4byteになるようにアライメントを揃える
+// c 4byte
+int align_to(int n, int align) {
+    return (n + align - 1) & ~(align - 1);
 }
