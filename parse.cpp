@@ -10,6 +10,9 @@ int current_func = 0;
 
 StringToken *strings;
 
+int struct_def_index = 0;
+Type *structs[100];
+
 Node *new_node(NodeKind kind) {
     Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
     node->kind = kind;
@@ -223,9 +226,9 @@ Node *add() {
             Node *r = mul();
 
             // ポインタの演算の場合は、ポインタのサイズ分を足す
-            if (node->type && node->type->ty != Type::INT) {
-                int n = node->type->ptr_to->ty == Type::INT ? 4 
-                    : node->type->ptr_to->ty == Type::CHAR ? 1
+            if (node->type && node->type->ty != INT) {
+                int n = node->type->ptr_to->ty == INT ? 4 
+                    : node->type->ptr_to->ty == CHAR ? 1
                     : 8;
                 r = new_binary(ND_MUL, r, new_node_num(n));
             }
@@ -235,9 +238,9 @@ Node *add() {
             Node *r = mul();
             
             // ポインタの演算の場合は、ポインタのサイズ分を引く
-            if (node->type && node->type->ty != Type::INT) {
-                int n = node->type->ptr_to->ty == Type::INT ? 4 
-                    : node->type->ptr_to->ty == Type::CHAR ? 1
+            if (node->type && node->type->ty != INT) {
+                int n = node->type->ptr_to->ty == INT ? 4 
+                    : node->type->ptr_to->ty == CHAR ? 1
                     : 8;
                 r = new_binary(ND_MUL, r, new_node_num(n));
             }
@@ -278,8 +281,8 @@ Node *unary() {
     if (consume_kind(TK_SIZEOF)) {
         Node *n = unary();
         Type *t = get_type(n);
-        int size = t && t->ty == Type::PTR ? 8 
-                : t && t->ty == Type::CHAR ? 1
+        int size = t && t->ty == PTR ? 8 
+                : t && t->ty == CHAR ? 1
                 : 4;
         return new_node_num(size);
     }
@@ -363,23 +366,56 @@ Type *get_type(Node *node) {
     return t;
 }
 
-// 関数か変数定義の前半部分を読んで、それを返す
-// int *foo; int *foo() {} があった場合、int *fooの部分までを読む
-DefineFuncOrVariable *read_define_first_half() {
-    Token *type_token = consume_kind(TK_TYPE);
-    if (!type_token) {
+Type *define_struct() {
+    if (!consume_kind(TK_STRUCT)) {
         return NULL;
     }
 
-    Type *type = static_cast<Type*>(calloc(1,sizeof(Type)));
-    bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
-    type->ty = is_char ? Type::CHAR : Type::INT;
-    type->ptr_to = NULL;
+    expect("{");
+    Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+    t->ty = STRUCT;
+    int offset = 0;
+
+    while (!consume("}")) {
+        DefineFuncOrVariable *def_first_half = read_define_first_half();
+        read_type(def_first_half);
+        expect(";");
+
+        Member *m = static_cast<Member*>(calloc(1,sizeof(Member)));
+        m->name = static_cast<char*>(calloc(100,sizeof(char)));
+        memcpy(m->name, def_first_half->ident->str, def_first_half->ident->len);
+        m->type = def_first_half->type;
+        m->offset = offset;
+        offset += get_size(def_first_half->type);
+        m->next = t->member_list;
+        t->member_list = m;
+    }
+    t->byte_size = offset;
+
+    // expect(";");
+    return t;
+}
+
+// 関数か変数定義の前半部分を読んで、それを返す
+// int *foo; int *foo() {} があった場合、int *fooの部分までを読む
+DefineFuncOrVariable *read_define_first_half() {
+    Type *type = define_struct();
+    if (!type) {
+        Token *type_token = consume_kind(TK_TYPE);
+        if (!type_token) {
+            return NULL;
+        }
+
+        type = static_cast<Type*>(calloc(1,sizeof(Type)));
+        bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
+        type->ty = is_char ? CHAR : INT;
+        type->ptr_to = NULL;
+    }
 
     // derefの*を読む
     while (consume("*")) {
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
-        t->ty = Type::PTR;
+        t->ty = PTR;
         t->ptr_to = type;
         type = t; // 最終的にtypeは*intのような形になる
     }
@@ -404,7 +440,7 @@ Node *initialize_local_variable(Node *node) {
     // int x[] = {1,2,3} のような場合
     Node *assign_arr;
 
-    if (node->type->ty == Type::ARRAY && node->variable->init_value->block) {
+    if (node->type->ty == ARRAY && node->variable->init_value->block) {
         Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
         block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
         block_node->kind = ND_BLOCK;
@@ -414,9 +450,9 @@ Node *initialize_local_variable(Node *node) {
             Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
             add->kind = ND_ADD;
             add->lhs = node;
-            if (node->type && node->type->ty != Type::INT) {
-                int n = node->type->ptr_to->ty == Type::INT ? 4 
-                        : node->type->ptr_to->ty == Type::CHAR ? 1
+            if (node->type && node->type->ty != INT) {
+                int n = node->type->ptr_to->ty == INT ? 4 
+                        : node->type->ptr_to->ty == CHAR ? 1
                         : 8;
                 add->rhs = new_node_num(n * i); // n*iは配列の要素のサイズ
             }
@@ -449,9 +485,9 @@ Node *initialize_local_variable(Node *node) {
             Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
             add->kind = ND_ADD;
             add->lhs = node;
-            if (node->type && node->type->ty != Type::INT) {
-                int n = node->type->ptr_to->ty == Type::INT ? 4 
-                        : node->type->ptr_to->ty == Type::CHAR ? 1
+            if (node->type && node->type->ty != INT) {
+                int n = node->type->ptr_to->ty == INT ? 4 
+                        : node->type->ptr_to->ty == CHAR ? 1
                         : 8;
                 add->rhs = new_node_num(n * i); // n*iは配列の要素のサイズ
             }
@@ -482,20 +518,17 @@ Node *initialize_local_variable(Node *node) {
     return assign;
 }
 
-// まだ定義されていない変数の定義を行う
-// int *foo; int *foo() {} などがあった場合、int *fooの部分までがdef_first_half
-Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
+void read_type(DefineFuncOrVariable *def_first_half) {
     if (!def_first_half) {
         error("invalid def_first_half variable.");
     }
 
     Type *type = def_first_half->type;
-    int size = type->ty == Type::PTR ? 8 : type->ty == Type::CHAR ? 1 : 4;
 
     // 配列かチェック
     while (consume("[")) {
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
-        t->ty = Type::ARRAY;
+        t->ty = ARRAY;
         t->ptr_to = type;
         Token *array_num = NULL;
         t->array_size = 0;
@@ -505,6 +538,27 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         type = t;
         expect("]");
     }
+    def_first_half->type = type;
+}
+
+int get_size(Type *type) {
+    if (type->ty == STRUCT) {
+        return type->byte_size;
+    }
+    if (type->ty == ARRAY) {
+        if (type->array_size == 0) {
+            error("array size is not specified.");
+        }
+        return get_size(type->ptr_to) * type->array_size;
+    }
+    return type->ty == PTR ? 8 : type->ty == CHAR ? 1 : 4;
+}
+
+// まだ定義されていない変数の定義を行う
+// int *foo; int *foo() {} などがあった場合、int *fooの部分までがdef_first_half
+Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
+    read_type(def_first_half);
+    Type *type = def_first_half->type;
 
     // 初期化式
     Node *init_value = NULL;
@@ -544,17 +598,10 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         }
     }
 
-    if (type->ty == Type::ARRAY) {
-        if (type->array_size == 0) {
-            error("array size is not specified.");
-        }
-        size *= type->array_size;
-    }
-
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
     memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
-    node->byte_size = size;
+    node->byte_size = get_size(type);
 
     Variable *local_variable = find_varable(def_first_half->ident);
     if (local_variable != NULL) {
@@ -576,7 +623,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     if (variable_list[current_func] == NULL) {
         local_variable->offset = 8;
     } else {
-        local_variable->offset = variable_list[current_func]->offset + size;
+        local_variable->offset = variable_list[current_func]->offset + node->byte_size;
     }
     local_variable->type = type;
 
@@ -617,9 +664,9 @@ Node *variable(Token *tok) {
         Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
         add->kind = ND_ADD;
         add->lhs = node;
-        if (node->type && node->type->ty != Type::INT) {
-            int n = node->type->ptr_to->ty == Type::INT ? 4 
-                    : node->type->ptr_to->ty == Type::CHAR ? 1
+        if (node->type && node->type->ty != INT) {
+            int n = node->type->ptr_to->ty == INT ? 4 
+                    : node->type->ptr_to->ty == CHAR ? 1
                     : 8;
             // 型のサイズにexpr()の値をかけた数字をrhsに入れる
             add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
@@ -633,7 +680,29 @@ Node *variable(Token *tok) {
 
         expect("]");
     }
+
+    while (consume(".")) {
+        Node *member_node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        member_node->kind = ND_MEMBER;
+        member_node->lhs = node;
+        member_node->member = find_member(consume_kind(TK_IDENT), node->type);
+        member_node->type = member_node->member->type;
+        node = member_node;
+    }
     return node;
+}
+Member *find_member(Token *tok, Type *type) {
+    if (!tok) {
+        error("invalid member.");
+    }
+    char token_str[100];
+    memcpy(token_str, tok->str, tok->len);
+    for (Member *m = type->member_list; m; m = m->next) {
+        if (memcmp(m->name, token_str, tok->len) == 0) {
+            return m;
+        }
+    }
+    error("undefined member");
 }
 
 // 変数を名前で検索する。

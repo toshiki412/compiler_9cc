@@ -33,19 +33,34 @@ typedef enum {
     ND_ADDR,                // アドレス &
     ND_DEREF,               // 参照先の値 *
     ND_STRING,              // 文字列
+    ND_MEMBER,              // 構造体のメンバ
 } NodeKind;
 
+typedef struct Member Member;
 typedef struct Type Type;
+
+struct Member {
+    Member *next;
+    Type *type;
+    char *name;
+    int offset;
+};
+
+typedef enum {
+    CHAR,
+    INT,
+    PTR,
+    ARRAY,
+    STRUCT,
+} TypeKind;
+
 struct Type {
     // *a[10] は ARRAY -> PTR -> INT のような数珠繋ぎになる
-    enum { // 型の種類
-        INT,
-        PTR,
-        ARRAY,
-        CHAR,
-    } ty;
+    TypeKind ty;
     struct Type *ptr_to;    // tyがPTRのときポインタの指す先の型
     size_t array_size;      // tyがARRAYのとき配列のサイズ
+    Member *member_list;    // tyがSTRUCTのときメンバのリスト
+    int byte_size;          // バイトサイズ
 };
 
 typedef struct StringToken StringToken;
@@ -72,6 +87,7 @@ struct Node {
     int byte_size;          // kindがND_GlobalVariableのとき使う
     StringToken *string;    // kindがND_STRINGのとき使う
     Variable *variable;     // kindがND_GLOBAL_VARIABLE_DEFのとき使う
+    Member *member;         // kindがND_MEMBERのとき使う
 };
 
 typedef struct Variable Variable;
@@ -112,10 +128,14 @@ Node *unary();
 Node *primary();
 
 Type *get_type(Node *node);
+Type *define_struct();
+void read_type(DefineFuncOrVariable *def_first_half);
+int get_size(Type *type);
 DefineFuncOrVariable *read_define_first_half();
 Node *initialize_local_variable(Node *node);
 Node *define_variable(DefineFuncOrVariable *def, Variable **varlist);
 Node *variable(Token *tok);
+Member *find_member(Token *tok, Type *type);
 Variable *find_varable(Token *tok);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
