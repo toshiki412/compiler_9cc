@@ -14,6 +14,11 @@ void gen_variable(Node *node) {
         printf("    push rax\n");
     } else if (node->kind == ND_GLOBAL_VARIABLE_USE) {
         printf("    push offset %s\n", node->variable_name);
+    } else if (node->kind == ND_MEMBER) {
+        gen_variable(node->lhs);
+        printf("    pop rax\n");
+        printf("    add rax, %d\n", node->member->offset);
+        printf("    push rax\n");
     } else {
         error("not VARIABLE");
     }
@@ -46,9 +51,9 @@ void gen(Node *node) {
         gen(node->lhs);
         type = get_type(node);
         printf("    pop rax\n");
-        if (type && type->ty == Type::CHAR) {
+        if (type && type->ty == CHAR) {
             printf("    movsx rax, BYTE PTR [rax]\n");
-        } else if (type && type->ty == Type::INT) {
+        } else if (type && type->ty == INT) {
             printf("    movsxd rax, DWORD PTR [rax]\n");
         } else {
             printf("    mov rax, [rax]\n");
@@ -182,17 +187,18 @@ void gen(Node *node) {
     case ND_NUM:
         printf("    push %d\n", node->num_value);
         return;
+    case ND_MEMBER:
     case ND_LOCAL_VARIABLE:
     case ND_GLOBAL_VARIABLE_USE:
         gen_variable(node);
         type = get_type(node);
-        if (type && type->ty == Type::ARRAY) {
+        if (type && type->ty == ARRAY) {
             return;
         }
         printf("    pop rax\n");
-        if (type && type->ty == Type::CHAR) {
+        if (type && type->ty == CHAR) {
             printf("    movsx rax, BYTE PTR [rax]\n");
-        } else if (type && type->ty == Type::INT) {
+        } else if (type && type->ty == INT) {
             printf("    movsxd rax, DWORD PTR [rax]\n");
         } else {
             printf("    mov rax, [rax]\n");
@@ -208,16 +214,16 @@ void gen(Node *node) {
         }
 
         // ”z—ñ‚Ì‰Šú‰»Ž®‚Ìê‡
-        if (node->type->ty == Type::ARRAY && node->variable->init_value->block) {
+        if (node->type->ty == ARRAY && node->variable->init_value->block) {
             for (int i = 0; node->variable->init_value->block[i]; i++) {
                 switch (node->type->ptr_to->ty) {
-                case Type::INT:
+                case INT:
                     printf("    .long 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
-                case Type::CHAR:
+                case CHAR:
                     printf("    .byte 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
-                case Type::PTR:
+                case PTR:
                     printf("    .quad %x\n", node->variable->init_value->block[i]->num_value);
                     break;
                 default:
@@ -233,7 +239,7 @@ void gen(Node *node) {
         // g:
         //     .quad .LC_1
         if (node->variable->init_value->kind == ND_STRING) {
-            if (node->type->ty == Type::ARRAY) {
+            if (node->type->ty == ARRAY) {
                 printf("    .string \"%s\"\n", node->variable->init_value->string->value);
             } else {
                 printf("    .quad .LC_%d\n", node->variable->init_value->string->index);
@@ -251,9 +257,9 @@ void gen(Node *node) {
 
         printf("    pop rdi\n");
         printf("    pop rax\n");
-        if (type && type->ty == Type::CHAR) {
+        if (type && type->ty == CHAR) {
             printf("    mov [rax], dil\n");
-        } else if (type && type->ty == Type::INT) {
+        } else if (type && type->ty == INT) {
             printf("    mov [rax], edi\n");
         } else {
             printf("    mov [rax], rdi\n");

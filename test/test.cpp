@@ -361,6 +361,17 @@ int test_lvar_init() {
   assert(0, efg[3]); //文字列の終端は0
 }
 
+// 構造体のテスト
+int test_struct() {
+  struct {
+    int a;
+    int b;
+  } abc;
+
+  abc.a = 10;
+  assert(10, abc.a);
+}
+
 int main() {
 
   test_calc();
@@ -385,6 +396,7 @@ int main() {
   test_string();
   test_gvar_init();
   test_lvar_init();
+  test_struct();
 
   printf("OK\n");
   return 0;
