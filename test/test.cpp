@@ -369,7 +369,9 @@ int test_struct() {
   } abc;
 
   abc.a = 10;
+  abc.b = 20;
   assert(10, abc.a);
+  assert(20, abc.b);
 }
 
 int main() {

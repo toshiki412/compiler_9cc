@@ -542,6 +542,15 @@ void read_type(DefineFuncOrVariable *def_first_half) {
 }
 
 int get_size(Type *type) {
+    if (type->ty == STRUCT) {
+        return type->byte_size;
+    }
+    if (type->ty == ARRAY) {
+        if (type->array_size == 0) {
+            error("array size is not specified.");
+        }
+        return get_size(type->ptr_to) * type->array_size;
+    }
     return type->ty == PTR ? 8 : type->ty == CHAR ? 1 : 4;
 }
 
@@ -550,7 +559,6 @@ int get_size(Type *type) {
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
     read_type(def_first_half);
     Type *type = def_first_half->type;
-    int size = get_size(type);
 
     // ‰Šú‰»Ž®
     Node *init_value = NULL;
@@ -590,17 +598,10 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         }
     }
 
-    if (type->ty == ARRAY) {
-        if (type->array_size == 0) {
-            error("array size is not specified.");
-        }
-        size *= type->array_size;
-    }
-
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
     memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
-    node->byte_size = size;
+    node->byte_size = get_size(type);
 
     Variable *local_variable = find_varable(def_first_half->ident);
     if (local_variable != NULL) {
@@ -622,7 +623,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     if (variable_list[current_func] == NULL) {
         local_variable->offset = 8;
     } else {
-        local_variable->offset = variable_list[current_func]->offset + size;
+        local_variable->offset = variable_list[current_func]->offset + node->byte_size;
     }
     local_variable->type = type;
 
