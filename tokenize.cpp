@@ -100,6 +100,11 @@ bool consume(const char *op) {
     return true;
 }
 
+// tokenの文字列がopと一致するかどうかを返す
+bool peek_token_str(const char *op) {
+    return strlen(op) == token->len && memcmp(token->str, op, token->len) == 0;
+}
+
 Token *consume_kind(TokenKind kind) {
     if (token->kind != kind) {
         return NULL;
@@ -248,7 +253,8 @@ Token *tokenize() {
             continue;
         }
 
-        if ('a' <= *input_char_pointer && *input_char_pointer <= 'z') {
+        if ('a' <= *input_char_pointer && *input_char_pointer <= 'z'
+            || 'A' <= *input_char_pointer && *input_char_pointer <= 'Z') {
             char *c = input_char_pointer;
             // 複数文字の変数名を対応
             while (is_alnum(*c)) {

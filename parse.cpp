@@ -11,7 +11,7 @@ int current_func = 0;
 StringToken *strings;
 
 int struct_def_index = 0;
-Type *structs[100];
+StructTag *struct_tags;
 
 Node *new_node(NodeKind kind) {
     Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
@@ -45,13 +45,23 @@ Node *code[100];
 void program() {
     int i = 0;
     while (!at_eof()) {
-        code[i++] = func();
+        Node *n = func();
+        if (!n) {
+            continue;
+        }
+        code[i++] = n;
     }
     code[i] = NULL;
 }
 
 Node *func() {
     Node *node;
+
+    Type *type = define_struct();
+    if (type) {
+        expect(";");
+        return NULL;
+    }
 
     // int *foo() {} のような関数定義の場合, int *fooの部分を読む
     DefineFuncOrVariable *def_first_half = read_define_first_half();
@@ -371,6 +381,15 @@ Type *define_struct() {
         return NULL;
     }
 
+    Token *ident = consume_kind(TK_IDENT);
+    if (ident && !peek_token_str("{")) {
+        StructTag *tag = find_tag("struct", ident);
+        if (!tag) {
+            error("type not found.");
+        }
+        return tag->type;
+    }
+
     expect("{");
     Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
     t->ty = STRUCT;
@@ -399,7 +418,13 @@ Type *define_struct() {
     }
     t->byte_size = offset;
 
-    // expect(";");
+    if (ident) {
+        char *name_str = static_cast<char*>(calloc(ident->len + 7,sizeof(char)));
+        memcpy(name_str, "struct ", 7);
+        memcpy(name_str + 7, ident->str, ident->len);
+        push_struct_tag_to_global(name_str, t); 
+    }
+
     return t;
 }
 
@@ -710,6 +735,7 @@ Member *find_member(Token *tok, Type *type) {
         }
     }
     error("undefined member");
+    return NULL;
 }
 
 // 変数を名前で検索する。
@@ -741,6 +767,36 @@ Variable *find_varable(Token *tok) {
 // b2 1byte
 //    2byte <- 4byteになるようにアライメントを揃える
 // c 4byte
-int align_to(int n, int align) {
-    return (n + align - 1) & ~(align - 1);
+// align_to(12, 8) = 16
+// byte_sizeを最も近いalignの倍数に切り上げる
+int align_to(int byte_size, int align) {
+    return (byte_size + align - 1) & ~(align - 1); // 2のべき乗でアライメントを揃える
+}
+
+void push_struct_tag_to_global(char *name, Type *type) {
+    StructTag *tag = static_cast<StructTag*>(calloc(1,sizeof(StructTag)));
+    tag->name = name;
+    tag->type = type;
+    if (struct_tags) {
+        tag->next = struct_tags;
+    }
+    fprintf(stderr, "TAGNAME: %s\n", tag->name);
+    struct_tags = tag;
+}
+
+StructTag *find_tag(const char* prefix, Token *tok) {
+    char tag_name[100] = {0};
+    if (prefix) {
+        memcpy(tag_name, prefix, strlen(prefix));
+        memcpy(tag_name + strlen(prefix), " ", 1);
+        memcpy(tag_name + strlen(prefix) + 1, tok->str, tok->len);
+    } else {
+        memcpy(tag_name, tok->str, tok->len);
+    }
+    for (StructTag *tag = struct_tags; tag; tag = tag->next) {
+        if (strcmp(tag->name, tag_name) == 0) {
+            return tag;
+        }
+    }
+    return NULL;
 }
