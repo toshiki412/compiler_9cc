@@ -148,6 +148,7 @@ Variable *find_varable(Token *tok);
 int align_to(int n, int align);
 void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type);
 StructTag *find_tag(const char* prefix, Token *tok);
+bool define_typedef();
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 /*

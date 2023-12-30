@@ -57,6 +57,10 @@ void program() {
 Node *func() {
     Node *node;
 
+    if (define_typedef()) {
+        return NULL;
+    }
+
     Type *type = define_struct();
     if (type) {
         expect(";");
@@ -428,17 +432,30 @@ Type *define_struct() {
 // 関数か変数定義の前半部分を読んで、それを返す
 // int *foo; int *foo() {} があった場合、int *fooの部分までを読む
 DefineFuncOrVariable *read_define_first_half() {
-    Type *type = define_struct();
-    if (!type) {
-        Token *type_token = consume_kind(TK_TYPE);
-        if (!type_token) {
-            return NULL;
+    Type *type = NULL;
+    Token *t = token;
+    Token *ident = consume_kind(TK_IDENT);
+    if (ident) {
+        StructTag *tag = find_tag(NULL,ident);
+        if (tag) {
+            type = tag->type;
+        } else {
+            token = t;
         }
+    }
+    if (!type) {
+        type = define_struct();
+        if (!type) {
+            Token *type_token = consume_kind(TK_TYPE);
+            if (!type_token) {
+                return NULL;
+            }
 
-        type = static_cast<Type*>(calloc(1,sizeof(Type)));
-        bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
-        type->ty = is_char ? CHAR : INT;
-        type->ptr_to = NULL;
+            type = static_cast<Type*>(calloc(1,sizeof(Type)));
+            bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
+            type->ty = is_char ? CHAR : INT;
+            type->ptr_to = NULL;
+        }
     }
 
     // derefの*を読む
@@ -794,7 +811,7 @@ int align_to(int byte_size, int align) {
 }
 
 void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type) {
-    char tag_name[100] = {0};
+    char *tag_name = static_cast<char*>(calloc(100,sizeof(char)));
     if (prefix) {
         memcpy(tag_name, prefix, strlen(prefix));
         memcpy(tag_name + strlen(prefix), " ", 1);
@@ -826,4 +843,14 @@ StructTag *find_tag(const char* prefix, Token *tok) {
         }
     }
     return NULL;
+}
+
+bool define_typedef() {
+    if (!consume_kind(TK_TYPEDEF)) {
+        return false;
+    }
+    DefineFuncOrVariable *def_first_half = read_define_first_half();
+    expect(";");
+    push_struct_tag_to_global(NULL, def_first_half->ident, def_first_half->type);
+    return true;
 }

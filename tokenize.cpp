@@ -179,6 +179,7 @@ ReservedWord reserved_words[] = {
     {"char", TK_TYPE},
     {"sizeof", TK_SIZEOF},
     {"struct", TK_STRUCT},
+    {"typedef", TK_TYPEDEF},
     {"", TK_EOF},
 };
 

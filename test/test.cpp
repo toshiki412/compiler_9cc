@@ -15,6 +15,9 @@ struct Hoge {
   int c;
 };
 
+typedef int MyInt;
+typedef char* MyString;
+
 int assert(int expected, int actual) {
     if (expected == actual) {
         printf("|"); // printfのエラーは#includeがまだないため修正不要
@@ -408,6 +411,13 @@ int test_struct_arrow() {
   assert(10, p->a);
 }
 
+int test_typedef() {
+  MyInt a;
+  a = 10;
+  // MyString b = "abc"; //これがあるとエラー
+  assert(10, a);
+}
+
 int main() {
 
   test_calc();
@@ -435,7 +445,8 @@ int main() {
   test_struct();
   test_sturct_alignment();
   test_struct_arrow();
-  
+  test_typedef();
+
   printf("OK\n");
   return 0;
 }
