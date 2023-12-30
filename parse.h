@@ -110,6 +110,13 @@ struct DefineFuncOrVariable {
     Token *ident;
 };
 
+typedef struct StructTag StructTag;
+struct StructTag {
+    StructTag *next;
+    char *name;
+    Type *type;
+};
+
 Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int num_value);
@@ -138,6 +145,8 @@ Node *variable(Token *tok);
 Member *find_member(Token *tok, Type *type);
 Variable *find_varable(Token *tok);
 int align_to(int n, int align);
+void push_struct_tag_to_global(char *name, Type *type);
+StructTag *find_tag(const char* prefix, Token *tok);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 /*

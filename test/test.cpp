@@ -9,9 +9,15 @@ char global_char_init[5] = {5, 6, 7, 8, 11};
 char *global_message = "foo";
 char global_message_array[4] = "bar";
 
+struct Hoge {
+  int a;
+  char b;
+  int c;
+};
+
 int assert(int expected, int actual) {
     if (expected == actual) {
-        printf("."); // printfのエラーは#includeがまだないため修正不要
+        printf("|"); // printfのエラーは#includeがまだないため修正不要
         return 0;
     }
     printf("%d expected, but got %d\n", expected, actual);
@@ -24,7 +30,7 @@ int fail() {
 }
 
 int ok() {
-  printf(".");
+  printf("|");
 }
 
 // 四則演算のテスト
@@ -375,11 +381,24 @@ int test_struct() {
 }
 
 int test_sturct_alignment() {
-  struct {
+  struct StTest {
     int e;
     char f;
     int g;
   } efg;
+
+  int size = &efg.g - &efg.e;
+  assert(8, size);
+
+  struct StTest efg2;
+  int size2 = &efg2.g - &efg2.e;
+  assert(8, size2);
+
+  struct {
+    int a;
+    char b;
+    int c;
+  } abc;
 
 }
 
@@ -408,6 +427,7 @@ int main() {
   test_gvar_init();
   test_lvar_init();
   test_struct();
+  test_sturct_alignment();
 
   printf("OK\n");
   return 0;

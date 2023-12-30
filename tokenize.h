@@ -32,6 +32,7 @@ char *read_file(char *path);
 void error_at(char *loc, const char *fmt, ...);
 void error(const char *fmt, ...);
 bool consume(const char *op);
+bool peek_token_str(const char *op);
 Token *consume_kind(TokenKind kind);
 void expect(const char *op);
 int expect_number();
