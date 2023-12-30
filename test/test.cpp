@@ -394,12 +394,18 @@ int test_sturct_alignment() {
   int size2 = &efg2.g - &efg2.e;
   assert(8, size2);
 
-  struct {
+}
+
+int test_struct_arrow() {  
+  struct Hoge {
     int a;
     char b;
     int c;
-  } abc;
+  } hoge;
+  hoge.a = 10;
 
+  struct Hoge *p = &hoge;
+  assert(10, p->a);
 }
 
 int main() {
@@ -428,7 +434,8 @@ int main() {
   test_lvar_init();
   test_struct();
   test_sturct_alignment();
-
+  test_struct_arrow();
+  
   printf("OK\n");
   return 0;
 }
