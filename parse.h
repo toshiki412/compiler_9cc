@@ -142,10 +142,11 @@ DefineFuncOrVariable *read_define_first_half();
 Node *initialize_local_variable(Node *node);
 Node *define_variable(DefineFuncOrVariable *def, Variable **varlist);
 Node *variable(Token *tok);
+Node *struct_reference(Node *node);
 Member *find_member(Token *tok, Type *type);
 Variable *find_varable(Token *tok);
 int align_to(int n, int align);
-void push_struct_tag_to_global(char *name, Type *type);
+void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type);
 StructTag *find_tag(const char* prefix, Token *tok);
 
 // BNF  ?はオプションの要素で、存在が必須ではない

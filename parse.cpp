@@ -419,10 +419,7 @@ Type *define_struct() {
     t->byte_size = offset;
 
     if (ident) {
-        char *name_str = static_cast<char*>(calloc(ident->len + 7,sizeof(char)));
-        memcpy(name_str, "struct ", 7);
-        memcpy(name_str + 7, ident->str, ident->len);
-        push_struct_tag_to_global(name_str, t); 
+        push_struct_tag_to_global("struct", ident, t); 
     }
 
     return t;
@@ -688,43 +685,66 @@ Node *variable(Token *tok) {
     node->offset = local_variable->offset;
     node->type = local_variable->type;
 
-    // a[3] は *(a + 3) と同じ  tokでaまで取れている
-    while (consume("[")) {
-        // nodeは現在a 
-        // addのlhsにa, rhsに3*4を入れる(4はaがintの場合のサイズ)
-        // addには(a + 3)が入る
-        Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
-        add->kind = ND_ADD;
-        add->lhs = node;
-        if (node->type && node->type->ty != INT) {
-            int n = node->type->ptr_to->ty == INT ? 4 
-                    : node->type->ptr_to->ty == CHAR ? 1
-                    : 8;
-            // 型のサイズにexpr()の値をかけた数字をrhsに入れる
-            add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
+    while (true) {
+        // a[3] は *(a + 3) と同じ  tokでaまで取れている
+        if (consume("[")) {
+            // nodeは現在a 
+            // addのlhsにa, rhsに3*4を入れる(4はaがintの場合のサイズ)
+            // addには(a + 3)が入る
+            Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
+            add->kind = ND_ADD;
+            add->lhs = node;
+            if (node->type && node->type->ty != INT) {
+                int n = node->type->ptr_to->ty == INT ? 4 
+                        : node->type->ptr_to->ty == CHAR ? 1
+                        : 8;
+                // 型のサイズにexpr()の値をかけた数字をrhsに入れる
+                add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
+            }
+
+            // 新しいnodeを作って、lhsに(a + 3)のaddを入れる
+            // 最終的にnodeを返すため、nodeを新しく更新している
+            node = static_cast<Node*>(calloc(1,sizeof(Node)));
+            node->kind = ND_DEREF;
+            node->lhs = add;
+
+            expect("]");
+            continue;
         }
 
-        // 新しいnodeを作って、lhsに(a + 3)のaddを入れる
-        // 最終的にnodeを返すため、nodeを新しく更新している
-        node = static_cast<Node*>(calloc(1,sizeof(Node)));
-        node->kind = ND_DEREF;
-        node->lhs = add;
+        if (consume(".")) {
+            node = struct_reference(node);
+            continue;
+        }
 
-        expect("]");
-    }
-
-    while (consume(".")) {
-        Node *member_node = static_cast<Node*>(calloc(1,sizeof(Node)));
-        member_node->kind = ND_MEMBER;
-        member_node->lhs = node;
-        member_node->member = find_member(consume_kind(TK_IDENT), node->type);
-        member_node->type = member_node->member->type;
-        node = member_node;
+        if (consume("->")) {
+            // x->y は (*x).y と同じ
+            Type *t = node->type->ptr_to;
+            node = new_binary(ND_DEREF, node, NULL);
+            node->type = t;
+            node = struct_reference(node);
+            continue;
+        }
+        break;
     }
     return node;
 }
+
+Node *struct_reference(Node *node) {
+    Node *member_node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    member_node->kind = ND_MEMBER;
+    member_node->lhs = node;
+    member_node->member = find_member(consume_kind(TK_IDENT), node->type);
+    member_node->type = member_node->member->type;
+    return member_node;
+}
+
 Member *find_member(Token *tok, Type *type) {
     if (!tok) {
+        error("invalid member.");
+    }
+
+    if (!type) {
         error("invalid member.");
     }
     char token_str[100];
@@ -773,14 +793,21 @@ int align_to(int byte_size, int align) {
     return (byte_size + align - 1) & ~(align - 1); // 2のべき乗でアライメントを揃える
 }
 
-void push_struct_tag_to_global(char *name, Type *type) {
+void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type) {
+    char tag_name[100] = {0};
+    if (prefix) {
+        memcpy(tag_name, prefix, strlen(prefix));
+        memcpy(tag_name + strlen(prefix), " ", 1);
+        memcpy(tag_name + strlen(prefix) + 1, tok->str, tok->len);
+    } else {
+        memcpy(tag_name, tok->str, tok->len);
+    }
     StructTag *tag = static_cast<StructTag*>(calloc(1,sizeof(StructTag)));
-    tag->name = name;
+    tag->name = tag_name;
     tag->type = type;
     if (struct_tags) {
         tag->next = struct_tags;
     }
-    fprintf(stderr, "TAGNAME: %s\n", tag->name);
     struct_tags = tag;
 }
 
