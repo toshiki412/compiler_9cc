@@ -17,6 +17,13 @@ struct Hoge {
 
 typedef int MyInt;
 typedef char* MyString;
+typedef struct Hoge MyHoge;
+
+enum Piyo {
+  PIYO_A = 10,
+  PIYO_B,
+  PIYO_C
+};
 
 int assert(int expected, int actual) {
     if (expected == actual) {
@@ -416,6 +423,23 @@ int test_typedef() {
   a = 10;
   // MyString b = "abc"; //これがあるとエラー
   assert(10, a);
+
+  MyHoge hoge;
+  hoge.a = 10;
+  assert(10, hoge.a);
+}
+
+int test_enum() {
+  enum Piyo2 {
+    AAA = 10,
+    BBB,
+    CCC
+  } aa;
+  enum Piyo2 piyo2;
+  piyo2 = AAA;
+  assert(10, piyo2);
+  assert(11, BBB);
+  assert(12, CCC);
 }
 
 int main() {
@@ -446,6 +470,7 @@ int main() {
   test_sturct_alignment();
   test_struct_arrow();
   test_typedef();
+  test_enum();
 
   printf("OK\n");
   return 0;
