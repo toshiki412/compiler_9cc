@@ -137,6 +137,7 @@ Node *stmt() {
             left->lhs = expr();
             expect(";");
         }
+
         if (!consume(";")) {
             left->rhs = expr();
             expect(";");
@@ -146,6 +147,7 @@ Node *stmt() {
             right->lhs = expr();
             expect(")");
         }
+        
         right->rhs = stmt();
 
         node->lhs = left;
