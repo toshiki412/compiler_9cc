@@ -35,6 +35,7 @@ typedef enum {
     ND_STRING,              // 文字列
     ND_MEMBER,              // 構造体のメンバ
     ND_BREAK,
+    ND_CONTINUE,
 } NodeKind;
 
 typedef struct Member Member;

@@ -26,6 +26,7 @@ void gen_variable(Node *node) {
 
 int gen_counter = 0; //genが呼ばれるたびにインクリメントされる
 int break_id = 0;    //breakのジャンプ先のラベル番号
+int conitnue_id = 0; //continueのジャンプ先のラベル番号
 
 //x86-64のABIに従い、引数はとりあえず6つまで
 const char *arg_registers_8bit[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"}; 
@@ -41,6 +42,7 @@ void gen(Node *node) {
     int func_arg_num = 0;
     Type *type; //変数の型
     int bid = 0;    //break_idを退避するための変数
+    int cid = 0;    //continue_idを退避するための変数
 
     switch (node->kind) {
     case ND_STRING:
@@ -138,9 +140,13 @@ void gen(Node *node) {
         bid = break_id; //break_idを退避
         break_id = label_id;
 
+        cid = conitnue_id; //conitnue_idを退避
+        conitnue_id = label_id;
+
         //for (A;B;C) D;
         gen(node->lhs->lhs);        //Aをコンパイルしたコード
         printf(".Lbegin%03d:\n", label_id);
+        printf(".Lcontinue%03d:\n", label_id);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if (!node->lhs->rhs) {        //無限ループの対応
             printf("    push 1\n");
@@ -154,13 +160,18 @@ void gen(Node *node) {
         printf(".Lend%03d:\n", label_id);
 
         break_id = bid;
+        conitnue_id = cid;
         return;
     case ND_WHILE:
         bid = break_id; //break_idを退避
         break_id = label_id;
 
+        cid = conitnue_id; //conitnue_idを退避
+        conitnue_id = label_id;
+
         //while (A) B;
         printf(".Lbegin%03d:\n", label_id);
+        printf(".Lcontinue%03d:\n", label_id);
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
@@ -170,6 +181,7 @@ void gen(Node *node) {
         printf(".Lend%03d:\n", label_id);
 
         break_id = bid;
+        conitnue_id = cid;
         return;
     case ND_IF:
         //if (A) B; else C;
@@ -194,6 +206,12 @@ void gen(Node *node) {
             error("stray break");
         }
         printf("    jmp .Lend%03d\n", break_id);
+        return;
+    case ND_CONTINUE:
+        if (conitnue_id == 0) {
+            error("stray continue");
+        }
+        printf("    jmp .Lcontinue%03d\n", conitnue_id);
         return;
     case ND_RETURN:
         gen(node->lhs);
