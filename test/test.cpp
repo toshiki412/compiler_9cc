@@ -493,6 +493,18 @@ int test_continue() {
 
   assert(5, j);
   assert(10, i);
+
+  i = 0;
+  j = 0;
+  for (; i<10; i = i + 1) {
+    if (i > 5) {
+      continue;
+    }
+    j = j + 1;
+  }
+
+  assert(10, i);
+  assert(5, j);
 }
 
 int main() {

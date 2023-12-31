@@ -154,8 +154,8 @@ void gen(Node *node) {
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
         printf("    je .Lend%03d\n", label_id);
-        gen(node->rhs->rhs);        //Dをコンパイルしたコード
         gen(node->rhs->lhs);        //Cをコンパイルしたコード 
+        gen(node->rhs->rhs);        //Dをコンパイルしたコード
         printf("    jmp .Lbegin%03d\n", label_id);
         printf(".Lend%03d:\n", label_id);
 
