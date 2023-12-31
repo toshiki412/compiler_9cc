@@ -442,6 +442,59 @@ int test_enum() {
   assert(12, CCC);
 }
 
+int test_break() {
+  int i;
+  i = 0;
+  while (1) {
+    i = i + 1;
+    if (i == 5) {
+      break;
+    }
+  }
+  assert(5, i);
+
+  i = 0;
+  for (;;) {
+    i = i + 1;
+    if (i == 3) {
+      break;
+    }
+  }
+  assert(3, i);
+
+  i = 0;
+  int j = 0;
+  for (;;) {
+    i = i + 1;
+    if (i == 3) {
+      break;
+    }
+    for (;;) {
+      if (j == 4) {
+        break;
+      }
+      j = j + 1;
+    }
+  }
+  assert(3, i);
+  assert(4, j);
+}
+
+int test_continue() {
+  int i = 0;
+  int j = 0;
+  while(i < 10) {
+    i = i + 1;
+    if (i > 5) {
+      continue;
+    }
+    j = j + 1;
+  }
+
+  assert(5, j);
+  assert(10, i);
+}
+
 int main() {
 
   test_calc();
@@ -471,6 +524,8 @@ int main() {
   test_struct_arrow();
   test_typedef();
   test_enum();
+  test_break();
+  test_continue();
 
   printf("OK\n");
   return 0;
