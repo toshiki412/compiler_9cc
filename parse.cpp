@@ -188,6 +188,13 @@ Node *stmt() {
         return node;
     }
 
+    if (consume_kind(TK_BREAK)) {
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_BREAK;
+        expect(";");
+        return node;
+    }
+
     DefineFuncOrVariable *def_first_half = read_define_first_half();
     if (def_first_half) {
         node = define_variable(def_first_half, locals);

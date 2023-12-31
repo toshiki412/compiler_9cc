@@ -25,6 +25,7 @@ void gen_variable(Node *node) {
 }
 
 int gen_counter = 0; //genが呼ばれるたびにインクリメントされる
+int break_id = 0;    //breakのジャンプ先のラベル番号
 
 //x86-64のABIに従い、引数はとりあえず6つまで
 const char *arg_registers_8bit[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"}; 
@@ -36,9 +37,10 @@ const char *arg_registers_64bit[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 void gen(Node *node) {
     if (!node) return;
     gen_counter += 1;
-    int labelId = gen_counter;
+    int label_id = gen_counter;
     int func_arg_num = 0;
     Type *type; //変数の型
+    int bid = 0;    //break_idを退避するための変数
 
     switch (node->kind) {
     case ND_STRING:
@@ -112,16 +114,16 @@ void gen(Node *node) {
         //関数呼び出し
         printf("    mov rax, rsp\n");
         printf("    and rax, 15\n");                //下位４bitをマスクする rspが16の倍数かどうかをチェックする
-        printf("    jnz .L.call.%03d\n", labelId);  //16の倍数じゃないならばジャンプ
+        printf("    jnz .L.call.%03d\n", label_id);  //16の倍数じゃないならばジャンプ
         printf("    mov rax, 0\n");
         printf("    call %s\n", node->func_name);    //関数呼び出し
-        printf("    jmp .L.end.%03d\n", labelId);
-        printf(".L.call.%03d:\n", labelId);
+        printf("    jmp .L.end.%03d\n", label_id);
+        printf(".L.call.%03d:\n", label_id);
         printf("    sub rsp, 8\n");                 // rspを16の倍数にするために8バイト分ずらす
         printf("    mov rax, 0\n");                 // alは0にする
         printf("    call %s\n", node->func_name);    //関数呼び出し
         printf("    add rsp, 8\n");                 // 8バイトずらしたrspを元に戻す
-        printf(".L.end.%03d:\n", labelId);
+        printf(".L.end.%03d:\n", label_id);
         printf("    push rax\n");                   //関数からリターンしたときにraxに入っている値が関数の返り値という約束
 
         return;
@@ -133,49 +135,65 @@ void gen(Node *node) {
         }
         return;
     case ND_FOR:
+        bid = break_id; //break_idを退避
+        break_id = label_id;
+
         //for (A;B;C) D;
         gen(node->lhs->lhs);        //Aをコンパイルしたコード
-        printf(".Lbegin%03d:\n", labelId);
+        printf(".Lbegin%03d:\n", label_id);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if (!node->lhs->rhs) {        //無限ループの対応
             printf("    push 1\n");
         }
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lend%03d\n", labelId);
+        printf("    je .Lend%03d\n", label_id);
         gen(node->rhs->rhs);        //Dをコンパイルしたコード
         gen(node->rhs->lhs);        //Cをコンパイルしたコード 
-        printf("    jmp .Lbegin%03d\n", labelId);
-        printf(".Lend%03d:\n", labelId);
+        printf("    jmp .Lbegin%03d\n", label_id);
+        printf(".Lend%03d:\n", label_id);
+
+        break_id = bid;
         return;
     case ND_WHILE:
+        bid = break_id; //break_idを退避
+        break_id = label_id;
+
         //while (A) B;
-        printf(".Lbegin%03d:\n", labelId);
+        printf(".Lbegin%03d:\n", label_id);
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lend%03d\n", labelId);
+        printf("    je .Lend%03d\n", label_id);
         gen(node->rhs);             //Bをコンパイルしたコード
-        printf("    jmp .Lbegin%03d\n", labelId);
-        printf(".Lend%03d:\n", labelId);
+        printf("    jmp .Lbegin%03d\n", label_id);
+        printf(".Lend%03d:\n", label_id);
+
+        break_id = bid;
         return;
     case ND_IF:
         //if (A) B; else C;
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lelse%03d\n", labelId);
+        printf("    je .Lelse%03d\n", label_id);
         if (node->rhs->kind == ND_ELSE) {
             gen(node->rhs->lhs);    //Bをコンパイルしたコード
         } else {
             gen(node->rhs);         //Bをコンパイルしたコード
         }
-        printf("    jmp .Lend%03d\n", labelId);
-        printf(".Lelse%03d:\n", labelId);
+        printf("    jmp .Lend%03d\n", label_id);
+        printf(".Lelse%03d:\n", label_id);
         if (node->rhs->kind == ND_ELSE) {
             gen(node->rhs->rhs);    //Cをコンパイルしたコード
         }
-        printf(".Lend%03d:\n", labelId);
+        printf(".Lend%03d:\n", label_id);
+        return;
+    case ND_BREAK:
+        if (break_id == 0) {
+            error("stray break");
+        }
+        printf("    jmp .Lend%03d\n", break_id);
         return;
     case ND_RETURN:
         gen(node->lhs);
