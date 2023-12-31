@@ -13,6 +13,8 @@ StringToken *strings;
 int struct_def_index = 0;
 StructTag *struct_tags;
 
+EnumVariable *enum_variables;
+
 Node *new_node(NodeKind kind) {
     Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
     node->kind = kind;
@@ -56,12 +58,20 @@ void program() {
 
 Node *func() {
     Node *node;
+    Type *type = NULL;
 
     if (define_typedef()) {
         return NULL;
     }
 
-    Type *type = define_struct();
+    type = define_enum();
+    if (type) {
+        expect(";");
+        return NULL;
+    }
+
+
+    type = define_struct();
     if (type) {
         expect(";");
         return NULL;
@@ -332,6 +342,12 @@ Node *primary() {
             return node;
         }
 
+        // enumÇÃèÍçá
+        Node *num_node = find_enum_variable(tok);
+        if (num_node) {
+            return num_node;
+        }
+
         //ä÷êîåƒÇ—èoÇµÇ≈ÇÕÇ»Ç¢èÍçáÅAïœêîÅB
         return variable(tok);
     }
@@ -445,17 +461,20 @@ DefineFuncOrVariable *read_define_first_half() {
     }
     if (!type) {
         type = define_struct();
-        if (!type) {
-            Token *type_token = consume_kind(TK_TYPE);
-            if (!type_token) {
-                return NULL;
-            }
-
-            type = static_cast<Type*>(calloc(1,sizeof(Type)));
-            bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
-            type->ty = is_char ? CHAR : INT;
-            type->ptr_to = NULL;
+    }
+    if (!type) {
+        type = define_enum();
+    }
+    if (!type) {
+        Token *type_token = consume_kind(TK_TYPE);
+        if (!type_token) {
+            return NULL;
         }
+
+        type = static_cast<Type*>(calloc(1,sizeof(Type)));
+        bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
+        type->ty = is_char ? CHAR : INT;
+        type->ptr_to = NULL;
     }
 
     // derefÇÃ*Çì«Çﬁ
@@ -853,4 +872,68 @@ bool define_typedef() {
     expect(";");
     push_struct_tag_to_global(NULL, def_first_half->ident, def_first_half->type);
     return true;
+}
+
+Type *define_enum() {
+    if (!consume_kind(TK_ENUM)) {
+        return NULL;
+    }
+
+    Token *ident = consume_kind(TK_IDENT);
+    if (ident && !peek_token_str("{")) {
+        StructTag *tag = find_tag("enum", ident);
+        if (!tag) {
+            error("enum ident not found.");
+        }
+        return tag->type;
+    }
+
+    expect("{");
+    int enum_index = 0;
+    while (true) {
+        Token *tok = consume_kind(TK_IDENT);
+
+        if (consume("=")) {
+            enum_index = expect_number();
+        } else {
+            enum_index++;
+        }
+
+        EnumVariable *e = static_cast<EnumVariable*>(calloc(1,sizeof(EnumVariable)));
+        e->name = static_cast<char*>(calloc(100,sizeof(char)));
+        memcpy(e->name, tok->str, tok->len);
+        e->value = enum_index;
+        e->next = enum_variables;
+        enum_variables = e;
+
+        if (consume("}")) {
+            break;
+        }
+        expect(",");
+
+        if (ident) {
+            push_struct_tag_to_global("enum", ident, int_type());
+        }
+    }
+    return int_type();
+}
+
+Type *int_type() {
+    Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+    t->ty = INT;
+    t->byte_size = 4;
+    return t;
+}
+
+Node *find_enum_variable(Token *tok) {
+    char token_str[100] = {0};
+    memcpy(token_str, tok->str, tok->len);
+
+    for (EnumVariable *e = enum_variables; e; e = e->next) {
+        if (strcmp(e->name, token_str) == 0) {
+            return new_node_num(e->value);
+        }
+    }
+
+    return NULL;
 }

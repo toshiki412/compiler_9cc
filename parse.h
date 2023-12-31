@@ -117,6 +117,13 @@ struct StructTag {
     Type *type;
 };
 
+typedef struct EnumVariable EnumVariable;
+struct EnumVariable {
+    EnumVariable *next;
+    char *name;
+    int value;
+};
+
 Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int num_value);
@@ -149,6 +156,9 @@ int align_to(int n, int align);
 void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type);
 StructTag *find_tag(const char* prefix, Token *tok);
 bool define_typedef();
+Type *define_enum();
+Type *int_type();
+Node *find_enum_variable(Token *tok);
 
 // BNF  ?はオプションの要素で、存在が必須ではない
 /*

@@ -22,3 +22,4 @@ extern int current_func;        // ローカル関数の数
 extern Node *code[];            // プログラムのコード
 extern StringToken *strings;    // 文字列リテラル
 extern StructTag *struct_tags;  // 構造体タグ
+extern EnumVariable *enum_variables; // enumの変数

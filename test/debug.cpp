@@ -1,4 +1,16 @@
+enum Piyo {
+  PIYO_A = 10,
+  PIYO_B,
+  PIYO_C
+};
+
 int main() {
-    int a = 10;
-    return a;
+    enum Piyo2 {
+    AAA = 10,
+    BBB,
+    CCC
+  } aa;
+  enum Piyo2 piyo2;
+  piyo2 = AAA;
+  return piyo2;
 }
