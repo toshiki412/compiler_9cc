@@ -331,6 +331,18 @@ Node *unary() {
     if (consume("&")) {
         return new_binary(ND_ADDR, unary(), NULL);
     }
+
+    if (consume("++")) { // PRE INCREMENT
+        Node *node = unary();
+        Node *add = new_binary(ND_ADD, node, new_node_num(1));
+        return new_binary(ND_ASSIGN, node, add);
+    }
+    if (consume("--")) { // PRE DECREMENT
+        Node *node = unary();
+        Node *sub = new_binary(ND_SUB, node, new_node_num(1));
+        return new_binary(ND_ASSIGN, node, sub);
+    }
+
     if (consume_kind(TK_SIZEOF)) {
         Node *n = unary();
         Type *t = get_type(n);
@@ -790,6 +802,25 @@ Node *variable(Token *tok) {
             node = struct_reference(node);
             continue;
         }
+
+        if (consume("++")) { // POST INCREMENT
+            // (a+=1)-1
+            Node *add = new_binary(ND_ADD, node, new_node_num(1));
+            node = new_binary(ND_ASSIGN, node, add);
+            // assignの後にsubを入れてもaの値は変わらず、その行はaに1引いた値が評価値となる
+            node = new_binary(ND_SUB, node, new_node_num(1)); 
+            continue;
+        }
+
+        if (consume("--")) { // POST DECREMENT
+            // (a-=1)+1
+            Node *sub = new_binary(ND_SUB, node, new_node_num(1));
+            node = new_binary(ND_ASSIGN, node, sub);
+            // assignの後にaddを入れてもaの値は変わらず、その行はaに1足した値が評価値となる
+            node = new_binary(ND_ADD, node, new_node_num(1));
+            continue;
+        }
+
         break;
     }
     return node;
