@@ -139,6 +139,7 @@ Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
+Node *ptr_calc(Node *node, Node *right);
 Node *mul();
 Node *unary();
 Node *primary();

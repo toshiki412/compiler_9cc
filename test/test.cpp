@@ -507,6 +507,43 @@ int test_continue() {
   assert(5, j);
 }
 
+int test_addeq() {
+  int a = 10;
+  a += 5;
+  assert(15, a);
+}
+
+int test_subeq() {
+  int a = 10;
+  a -= 5;
+  assert(5, a);
+}
+
+int test_muleq() {
+  int a = 10;
+  a *= 5;
+  assert(50, a);
+}
+
+int test_diveq() {
+  int a = 10;
+  a /= 5;
+  assert(2, a);
+}
+
+int test_addeq_ptr() {
+  int a[2] = {2,4}; // 配列の大きさが5以上だとエラーになる
+  int *p;
+  p = &a;
+  assert(2, *p);
+
+  p += 1;
+  assert(4, *p);
+
+  p -= 1;
+  assert(2, *p);
+}
+
 int main() {
 
   test_calc();
@@ -538,6 +575,11 @@ int main() {
   test_enum();
   test_break();
   test_continue();
+  test_addeq();
+  test_subeq();
+  test_muleq();
+  test_diveq();
+  test_addeq_ptr();
 
   printf("OK\n");
   return 0;

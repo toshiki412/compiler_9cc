@@ -1,6 +1,6 @@
 #include "9cc.h"
 
-//ローカル変数 100個の関数まで対応
+// ローカル変数 100個の関数まで対応
 Variable *locals[100];
 
 // グローバル変数
@@ -40,7 +40,7 @@ Node *new_node_string(StringToken *s) {
     return node;
 }
 
-//100行までしか対応していない
+// 100行までしか対応していない
 Node *code[100];
 
 // 9cc.hに構文あり
@@ -101,7 +101,7 @@ Node *func() {
         node->lhs = stmt();
         return node;
     } else {
-        // fooのあと( でなければ変数定義である    
+        // fooのあと( でなければ変数定義である
         node = define_variable(def_first_half, globals); // グローバル変数の登録
         node->kind = ND_GLOBAL_VARIABLE_DEF; // グローバル変数の場合はND_GLOBAL_VARIABLE_DEFに書き換える ちょっと微妙
         expect(";");
@@ -115,7 +115,7 @@ Node *stmt() {
     if (consume("{")) {
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_BLOCK;
-        //100行までしか対応していない
+        // 100行までしか対応していない
         node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
         for (int i = 0; !consume("}"); i++) {
             node->block[i] = stmt(); // {}内にあるstmtを追加
@@ -226,6 +226,27 @@ Node *assign() {
     if (consume("=")) {
         node = new_binary(ND_ASSIGN, node, assign());
     }
+
+    if (consume("*=")) {
+        Node *mul = new_binary(ND_MUL, node, assign());
+        node = new_binary(ND_ASSIGN, node, mul);
+    }
+
+    if (consume("/=")) {
+        Node *div = new_binary(ND_DIV, node, assign());
+        node = new_binary(ND_ASSIGN, node, div);
+    }
+
+    if (consume("+=")) {
+        Node *add = new_binary(ND_ADD, node, ptr_calc(node, assign()));
+        node = new_binary(ND_ASSIGN, node, add);
+    }
+
+    if (consume("-=")) {
+        Node *sub = new_binary(ND_SUB, node, ptr_calc(node, assign()));
+        node = new_binary(ND_ASSIGN, node, sub);
+    }
+
     return node;
 }
 
@@ -263,33 +284,25 @@ Node *add() {
     Node *node = mul();
     for (;;) {
         if (consume("+")) {
-            Node *r = mul();
-
             // ポインタの演算の場合は、ポインタのサイズ分を足す
-            if (node->type && node->type->ty != INT) {
-                int n = node->type->ptr_to->ty == INT ? 4 
-                    : node->type->ptr_to->ty == CHAR ? 1
-                    : 8;
-                r = new_binary(ND_MUL, r, new_node_num(n));
-            }
-
-            node = new_binary(ND_ADD, node, r);
+            node = new_binary(ND_ADD, node, ptr_calc(node, mul()));
         } else if (consume("-")) {
-            Node *r = mul();
-            
             // ポインタの演算の場合は、ポインタのサイズ分を引く
-            if (node->type && node->type->ty != INT) {
-                int n = node->type->ptr_to->ty == INT ? 4 
-                    : node->type->ptr_to->ty == CHAR ? 1
-                    : 8;
-                r = new_binary(ND_MUL, r, new_node_num(n));
-            }
-
-            node = new_binary(ND_SUB, node, r);
+            node = new_binary(ND_SUB, node, ptr_calc(node, mul()));
         } else {
             return node;
         }
     }
+}
+
+Node *ptr_calc(Node *node, Node *right) {
+    if (node->type && node->type->ptr_to) {
+        int n = node->type->ptr_to->ty == INT ? 4 
+            : node->type->ptr_to->ty == CHAR ? 1
+            : 8;
+        return new_binary(ND_MUL, right, new_node_num(n));
+    }
+    return right;
 }
 
 Node *mul() {
@@ -307,7 +320,7 @@ Node *mul() {
 
 Node *unary() {
     if (consume("+")) {
-        return unary(); //+の場合は無視するということ
+        return unary(); // +の場合は無視するということ
     }
     if (consume("-")) {
         return new_binary(ND_SUB, new_node_num(0), unary());
@@ -340,13 +353,13 @@ Node *primary() {
     Token *tok = consume_kind(TK_IDENT);
     if (tok) {
         if (consume("(")) {
-            //関数呼び出し
+            // 関数呼び出し
             Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_FUNC_CALL;
             node->func_name = static_cast<char*>(calloc(1,sizeof(char)));
             memcpy(node->func_name, tok->str, tok->len);
 
-            //引数 とりあえず10個まで
+            // 引数 とりあえず10個まで
             node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
             for (int i = 0; !consume(")"); i++) {
                 node->block[i] = expr();
@@ -364,7 +377,7 @@ Node *primary() {
             return num_node;
         }
 
-        //関数呼び出しではない場合、変数。
+        // 関数呼び出しではない場合、変数。
         return variable(tok);
     }
 
@@ -553,7 +566,7 @@ Node *initialize_local_variable(Node *node) {
     }
 
     // arr[] = "foo"のような場合
-    // これはarr[] = {'f','o','o','\0'}と同じ
+    // これはarr[] = {'f','o','o','\0'}と同じｽ
     if (node->variable->init_value->kind == ND_STRING) {
         Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
         block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
@@ -828,7 +841,7 @@ Variable *find_varable(Token *tok) {
         }
     }
 
-    // どちらもなければNULLを返す
+    // どちらもなければNULLを返すｽ
     return NULL;
 }
 
