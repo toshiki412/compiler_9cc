@@ -532,7 +532,7 @@ int test_diveq() {
 }
 
 int test_addeq_ptr() {
-  int a[2] = {2,4};
+  int a[2] = {2,4}; // 配列の大きさが5以上だとエラーになる
   int *p;
   p = &a;
   assert(2, *p);
