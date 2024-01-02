@@ -544,6 +544,30 @@ int test_addeq_ptr() {
   assert(2, *p);
 }
 
+int test_plusplus() {
+  int a = 10;
+  a++;
+  assert(11, a);
+  ++a;
+  assert(12, a);
+
+  assert(12, a++);
+  assert(13, a);
+  assert(14, ++a);
+}
+
+int test_minusminus() {
+  int a = 10;
+  a--;
+  assert(9, a);
+  --a;
+  assert(8, a);
+
+  assert(8, a--);
+  assert(7, a);
+  assert(6, --a);
+}
+
 int main() {
 
   test_calc();
@@ -580,6 +604,8 @@ int main() {
   test_muleq();
   test_diveq();
   test_addeq_ptr();
+  test_plusplus();
+  test_minusminus();
 
   printf("OK\n");
   return 0;
