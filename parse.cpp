@@ -238,12 +238,12 @@ Node *assign() {
     }
 
     if (consume("+=")) {
-        // Node *add = new_binary(ND_ADD, node, ptr_calc(node, assign()));
+        Node *add = new_binary(ND_ADD, node, ptr_calc(node, assign()));
         node = new_binary(ND_ASSIGN, node, add);
     }
 
     if (consume("-=")) {
-        // Node *sub = new_binary(ND_SUB, node, ptr_calc(node, assign()));
+        Node *sub = new_binary(ND_SUB, node, ptr_calc(node, assign()));
         node = new_binary(ND_ASSIGN, node, sub);
     }
 
@@ -285,25 +285,25 @@ Node *add() {
     for (;;) {
         if (consume("+")) {
             // ポインタの演算の場合は、ポインタのサイズ分を足す
-            // node = new_binary(ND_ADD, node, ptr_calc(node, mul()));
+            node = new_binary(ND_ADD, node, ptr_calc(node, mul()));
         } else if (consume("-")) {
             // ポインタの演算の場合は、ポインタのサイズ分を引く
-            // node = new_binary(ND_SUB, node, ptr_calc(node, mul()));
+            node = new_binary(ND_SUB, node, ptr_calc(node, mul()));
         } else {
             return node;
         }
     }
 }
 
-// Node *ptr_calc(Node *node, Node *right) {
-//     if (node->type && node->type->ptr_to) {
-//         int n = node->type->ptr_to->ty == INT ? 4 
-//             : node->type->ptr_to->ty == CHAR ? 1
-//             : 8;
-//         return new_binary(ND_MUL, right, new_node_num(n));
-//     }
-//     return right;
-// }
+Node *ptr_calc(Node *node, Node *right) {
+    if (node->type && node->type->ptr_to) {
+        int n = node->type->ptr_to->ty == INT ? 4 
+            : node->type->ptr_to->ty == CHAR ? 1
+            : 8;
+        return new_binary(ND_MUL, right, new_node_num(n));
+    }
+    return right;
+}
 
 Node *mul() {
     Node *node = unary();

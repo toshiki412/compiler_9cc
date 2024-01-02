@@ -531,6 +531,19 @@ int test_diveq() {
   assert(2, a);
 }
 
+int test_addeq_ptr() {
+  int a[2] = {2,4};
+  int *p;
+  p = &a;
+  assert(2, *p);
+
+  p += 1;
+  assert(4, *p);
+
+  p -= 1;
+  assert(2, *p);
+}
+
 int main() {
 
   test_calc();
@@ -566,6 +579,7 @@ int main() {
   test_subeq();
   test_muleq();
   test_diveq();
+  test_addeq_ptr();
 
   printf("OK\n");
   return 0;
