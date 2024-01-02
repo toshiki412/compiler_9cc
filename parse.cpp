@@ -1,9 +1,9 @@
 #include "9cc.h"
 
-//ï¿½ï¿½ï¿½[ï¿½Jï¿½ï¿½ï¿½Ïï¿½ 100ï¿½Â‚ÌŠÖï¿½ï¿½Ü‚Å‘Î‰ï¿½
+// ƒ[ƒJƒ‹•Ï” 100ŒÂ‚ÌŠÖ”‚Ü‚Å‘Î‰
 Variable *locals[100];
 
-// ï¿½Oï¿½ï¿½ï¿½[ï¿½oï¿½ï¿½ï¿½Ïï¿½
+// ƒOƒ[ƒoƒ‹•Ï”
 Variable *globals[100];
 
 int current_func = 0;
@@ -40,10 +40,10 @@ Node *new_node_string(StringToken *s) {
     return node;
 }
 
-//100ï¿½sï¿½Ü‚Å‚ï¿½ï¿½ï¿½ï¿½Î‰ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½
+// 100s‚Ü‚Å‚µ‚©‘Î‰‚µ‚Ä‚¢‚È‚¢
 Node *code[100];
 
-// 9cc.hï¿½É\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// 9cc.h‚É\•¶‚ ‚è
 void program() {
     int i = 0;
     while (!at_eof()) {
@@ -77,7 +77,7 @@ Node *func() {
         return NULL;
     }
 
-    // int *foo() {} ï¿½Ì‚æ‚¤ï¿½ÈŠÖï¿½ï¿½ï¿½`ï¿½Ìê‡, int *fooï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚ï¿½
+    // int *foo() {} ‚Ì‚æ‚¤‚ÈŠÖ”’è‹`‚Ìê‡, int *foo‚Ì•”•ª‚ğ“Ç‚Ş
     DefineFuncOrVariable *def_first_half = read_define_first_half();
 
     if (consume("(")) {
@@ -87,7 +87,7 @@ Node *func() {
         node->kind = ND_FUNC_DEF;
         node->func_name = static_cast<char*>(calloc(100,sizeof(char)));
         memcpy(node->func_name, def_first_half->ident->str, def_first_half->ident->len);
-        node->func_args = static_cast<Node**>(calloc(10,sizeof(Node*))); //ï¿½ï¿½ï¿½ï¿½10ï¿½Â•ï¿½ï¿½Ì”zï¿½ï¿½Ì’ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        node->func_args = static_cast<Node**>(calloc(10,sizeof(Node*))); //ˆø”10ŒÂ•ª‚Ì”z—ñ‚Ì’·‚³‚ğì‚é
 
         for (int i = 0; !consume(")"); i++) {
             node->func_args[i] = define_variable(read_define_first_half(), locals);
@@ -101,9 +101,9 @@ Node *func() {
         node->lhs = stmt();
         return node;
     } else {
-        // fooï¿½Ì‚ï¿½ï¿½ï¿½( ï¿½Å‚È‚ï¿½ï¿½ï¿½Î•Ïï¿½ï¿½ï¿½`ï¿½Å‚ï¿½ï¿½ï¿½    
-        node = define_variable(def_first_half, globals); // ï¿½Oï¿½ï¿½ï¿½[ï¿½oï¿½ï¿½ï¿½Ïï¿½ï¿½Ì“oï¿½^
-        node->kind = ND_GLOBAL_VARIABLE_DEF; // ï¿½Oï¿½ï¿½ï¿½[ï¿½oï¿½ï¿½ï¿½Ïï¿½ï¿½Ìê‡ï¿½ï¿½ND_GLOBAL_VARIABLE_DEFï¿½Éï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ”ï¿½ï¿½ï¿½
+        // foo‚Ì‚ ‚Æ( ‚Å‚È‚¯‚ê‚Î•Ï”’è‹`‚Å‚ ‚é
+        node = define_variable(def_first_half, globals); // ƒOƒ[ƒoƒ‹•Ï”‚Ì“o˜^
+        node->kind = ND_GLOBAL_VARIABLE_DEF; // ƒOƒ[ƒoƒ‹•Ï”‚Ìê‡‚ÍND_GLOBAL_VARIABLE_DEF‚É‘‚«Š·‚¦‚é ‚¿‚å‚Á‚Æ”÷–­
         expect(";");
         return node;
     }
@@ -115,10 +115,10 @@ Node *stmt() {
     if (consume("{")) {
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_BLOCK;
-        //100ï¿½sï¿½Ü‚Å‚ï¿½ï¿½ï¿½ï¿½Î‰ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½
+        // 100s‚Ü‚Å‚µ‚©‘Î‰‚µ‚Ä‚¢‚È‚¢
         node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
         for (int i = 0; !consume("}"); i++) {
-            node->block[i] = stmt(); // {}ï¿½ï¿½ï¿½É‚ï¿½ï¿½ï¿½stmtï¿½ï¿½Ç‰ï¿½
+            node->block[i] = stmt(); // {}“à‚É‚ ‚éstmt‚ğ’Ç‰Á
         }
         return node;
     }
@@ -238,12 +238,12 @@ Node *assign() {
     }
 
     if (consume("+=")) {
-        Node *add = new_binary(ND_ADD, node, assign());
+        // Node *add = new_binary(ND_ADD, node, ptr_calc(node, assign()));
         node = new_binary(ND_ASSIGN, node, add);
     }
 
     if (consume("-=")) {
-        Node *sub = new_binary(ND_SUB, node, assign());
+        // Node *sub = new_binary(ND_SUB, node, ptr_calc(node, assign()));
         node = new_binary(ND_ASSIGN, node, sub);
     }
 
@@ -284,34 +284,26 @@ Node *add() {
     Node *node = mul();
     for (;;) {
         if (consume("+")) {
-            Node *r = mul();
-
-            // ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½Ì‰ï¿½ï¿½Zï¿½Ìê‡ï¿½ÍAï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ÌƒTï¿½Cï¿½Yï¿½ï¿½ï¿½ğ‘«‚ï¿½
-            if (node->type && node->type->ty != INT) {
-                int n = node->type->ptr_to->ty == INT ? 4 
-                    : node->type->ptr_to->ty == CHAR ? 1
-                    : 8;
-                r = new_binary(ND_MUL, r, new_node_num(n));
-            }
-
-            node = new_binary(ND_ADD, node, r);
+            // ƒ|ƒCƒ“ƒ^‚Ì‰‰Z‚Ìê‡‚ÍAƒ|ƒCƒ“ƒ^‚ÌƒTƒCƒY•ª‚ğ‘«‚·
+            // node = new_binary(ND_ADD, node, ptr_calc(node, mul()));
         } else if (consume("-")) {
-            Node *r = mul();
-            
-            // ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½Ì‰ï¿½ï¿½Zï¿½Ìê‡ï¿½ÍAï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ÌƒTï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-            if (node->type && node->type->ty != INT) {
-                int n = node->type->ptr_to->ty == INT ? 4 
-                    : node->type->ptr_to->ty == CHAR ? 1
-                    : 8;
-                r = new_binary(ND_MUL, r, new_node_num(n));
-            }
-
-            node = new_binary(ND_SUB, node, r);
+            // ƒ|ƒCƒ“ƒ^‚Ì‰‰Z‚Ìê‡‚ÍAƒ|ƒCƒ“ƒ^‚ÌƒTƒCƒY•ª‚ğˆø‚­
+            // node = new_binary(ND_SUB, node, ptr_calc(node, mul()));
         } else {
             return node;
         }
     }
 }
+
+// Node *ptr_calc(Node *node, Node *right) {
+//     if (node->type && node->type->ptr_to) {
+//         int n = node->type->ptr_to->ty == INT ? 4 
+//             : node->type->ptr_to->ty == CHAR ? 1
+//             : 8;
+//         return new_binary(ND_MUL, right, new_node_num(n));
+//     }
+//     return right;
+// }
 
 Node *mul() {
     Node *node = unary();
@@ -328,7 +320,7 @@ Node *mul() {
 
 Node *unary() {
     if (consume("+")) {
-        return unary(); //+ï¿½Ìê‡ï¿½Í–ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        return unary(); // +‚Ìê‡‚Í–³‹‚·‚é‚Æ‚¢‚¤‚±‚Æ
     }
     if (consume("-")) {
         return new_binary(ND_SUB, new_node_num(0), unary());
@@ -351,7 +343,7 @@ Node *unary() {
 }
 
 Node *primary() {
-    // ï¿½ï¿½ï¿½Ìƒgï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½"("ï¿½È‚ï¿½A"(" expr ")"ï¿½Ì‚Í‚ï¿½
+    // Ÿ‚Ìƒg[ƒNƒ“‚ª"("‚È‚çA"(" expr ")"‚Ì‚Í‚¸
     if (consume("(")) {
         Node *node = expr();
         expect(")");
@@ -361,13 +353,13 @@ Node *primary() {
     Token *tok = consume_kind(TK_IDENT);
     if (tok) {
         if (consume("(")) {
-            //ï¿½Öï¿½ï¿½Ä‚Ñoï¿½ï¿½
+            // ŠÖ”ŒÄ‚Ño‚µ
             Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_FUNC_CALL;
             node->func_name = static_cast<char*>(calloc(1,sizeof(char)));
             memcpy(node->func_name, tok->str, tok->len);
 
-            //ï¿½ï¿½ï¿½ï¿½ ï¿½Æ‚è‚ ï¿½ï¿½ï¿½ï¿½10ï¿½Â‚Ü‚ï¿½
+            // ˆø” ‚Æ‚è‚ ‚¦‚¸10ŒÂ‚Ü‚Å
             node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
             for (int i = 0; !consume(")"); i++) {
                 node->block[i] = expr();
@@ -379,13 +371,13 @@ Node *primary() {
             return node;
         }
 
-        // enumï¿½Ìê‡
+        // enum‚Ìê‡
         Node *num_node = find_enum_variable(tok);
         if (num_node) {
             return num_node;
         }
 
-        //ï¿½Öï¿½ï¿½Ä‚Ñoï¿½ï¿½ï¿½Å‚Í‚È‚ï¿½ï¿½ê‡ï¿½Aï¿½Ïï¿½ï¿½B
+        // ŠÖ”ŒÄ‚Ño‚µ‚Å‚Í‚È‚¢ê‡A•Ï”B
         return variable(tok);
     }
 
@@ -404,7 +396,7 @@ Node *primary() {
         return new_node_string(s);
     }
 
-    // ï¿½ï¿½ï¿½ï¿½ï¿½Å‚È‚ï¿½ï¿½ï¿½Îï¿½ï¿½lï¿½Ì‚Í‚ï¿½
+    // ‚»‚¤‚Å‚È‚¯‚ê‚Î”’l‚Ì‚Í‚¸
     return new_node_num(expect_number());
 }
 
@@ -482,8 +474,8 @@ Type *define_struct() {
     return t;
 }
 
-// ï¿½Öï¿½ï¿½ï¿½ï¿½Ïï¿½ï¿½ï¿½`ï¿½Ì‘Oï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚ï¿½ÅAï¿½ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½
-// int *foo; int *foo() {} ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Aint *fooï¿½Ì•ï¿½ï¿½ï¿½ï¿½Ü‚Å‚ï¿½Ç‚ï¿½
+// ŠÖ”‚©•Ï”’è‹`‚Ì‘O”¼•”•ª‚ğ“Ç‚ñ‚ÅA‚»‚ê‚ğ•Ô‚·
+// int *foo; int *foo() {} ‚ª‚ ‚Á‚½ê‡Aint *foo‚Ì•”•ª‚Ü‚Å‚ğ“Ç‚Ş
 DefineFuncOrVariable *read_define_first_half() {
     Type *type = NULL;
     Token *t = token;
@@ -514,12 +506,12 @@ DefineFuncOrVariable *read_define_first_half() {
         type->ptr_to = NULL;
     }
 
-    // derefï¿½ï¿½*ï¿½ï¿½Ç‚ï¿½
+    // deref‚Ì*‚ğ“Ç‚Ş
     while (consume("*")) {
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
         t->ty = PTR;
         t->ptr_to = type;
-        type = t; // ï¿½ÅIï¿½Iï¿½ï¿½typeï¿½ï¿½*intï¿½Ì‚æ‚¤ï¿½ÈŒ`ï¿½É‚È‚ï¿½
+        type = t; // ÅI“I‚Étype‚Í*int‚Ì‚æ‚¤‚ÈŒ`‚É‚È‚é
     }
 
     Token *tok = consume_kind(TK_IDENT);
@@ -539,7 +531,7 @@ Node *initialize_local_variable(Node *node) {
         return node;
     }
 
-    // int x[] = {1,2,3} ï¿½Ì‚æ‚¤ï¿½Èê‡
+    // int x[] = {1,2,3} ‚Ì‚æ‚¤‚Èê‡
     Node *assign_arr;
 
     if (node->type->ty == ARRAY && node->variable->init_value->block) {
@@ -556,13 +548,13 @@ Node *initialize_local_variable(Node *node) {
                 int n = node->type->ptr_to->ty == INT ? 4 
                         : node->type->ptr_to->ty == CHAR ? 1
                         : 8;
-                add->rhs = new_node_num(n * i); // n*iï¿½Í”zï¿½ï¿½Ì—vï¿½fï¿½ÌƒTï¿½Cï¿½Y
+                add->rhs = new_node_num(n * i); // n*i‚Í”z—ñ‚Ì—v‘f‚ÌƒTƒCƒY
             }
             Node *deref = static_cast<Node*>(calloc(1,sizeof(Node)));
             deref->kind = ND_DEREF;
             deref->lhs = add;
 
-            // = {1,2,3}ï¿½ï¿½1ï¿½ï¿½2ï¿½ï¿½3ï¿½Ì•ï¿½ï¿½ï¿½
+            // = {1,2,3}‚Ì1‚â2‚â3‚Ì•”•ª
             assign_arr = static_cast<Node*>(calloc(1,sizeof(Node)));
             assign_arr->kind = ND_ASSIGN;
             assign_arr->lhs = deref;
@@ -573,8 +565,8 @@ Node *initialize_local_variable(Node *node) {
         return block_node;
     }
 
-    // arr[] = "foo"ï¿½Ì‚æ‚¤ï¿½Èê‡
-    // ï¿½ï¿½ï¿½ï¿½ï¿½arr[] = {'f','o','o','\0'}ï¿½Æ“ï¿½ï¿½ï¿½
+    // arr[] = "foo"‚Ì‚æ‚¤‚Èê‡
+    // ‚±‚ê‚Íarr[] = {'f','o','o','\0'}‚Æ“¯‚¶½
     if (node->variable->init_value->kind == ND_STRING) {
         Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
         block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
@@ -591,13 +583,13 @@ Node *initialize_local_variable(Node *node) {
                 int n = node->type->ptr_to->ty == INT ? 4 
                         : node->type->ptr_to->ty == CHAR ? 1
                         : 8;
-                add->rhs = new_node_num(n * i); // n*iï¿½Í”zï¿½ï¿½Ì—vï¿½fï¿½ÌƒTï¿½Cï¿½Y
+                add->rhs = new_node_num(n * i); // n*i‚Í”z—ñ‚Ì—v‘f‚ÌƒTƒCƒY
             }
             Node *deref = static_cast<Node*>(calloc(1,sizeof(Node)));
             deref->kind = ND_DEREF;
             deref->lhs = add;
 
-            // = {1,2,3}ï¿½ï¿½1ï¿½ï¿½2ï¿½ï¿½3ï¿½Ì•ï¿½ï¿½ï¿½
+            // = {1,2,3}‚Ì1‚â2‚â3‚Ì•”•ª
             assign_arr = static_cast<Node*>(calloc(1,sizeof(Node)));
             assign_arr->kind = ND_ASSIGN;
             assign_arr->lhs = deref;
@@ -611,8 +603,8 @@ Node *initialize_local_variable(Node *node) {
         return block_node;
     }
 
-    // int a = 10; ï¿½ï¿½ a = 10ï¿½ï¿½ï¿½ï¿½ï¿½
-    // aï¿½ï¿½nodeï¿½É“ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½, 10ï¿½ï¿½node->variable->init_valueï¿½É“ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½
+    // int a = 10; ‚Ì a = 10‚ğì‚é
+    // a‚Ínode‚É“ü‚Á‚Ä‚¢‚Ä, 10‚Ínode->variable->init_value‚É“ü‚Á‚Ä‚¢‚é
     Node *assign = static_cast<Node*>(calloc(1,sizeof(Node)));
     assign->kind = ND_ASSIGN;
     assign->lhs = node;
@@ -627,7 +619,7 @@ void read_type(DefineFuncOrVariable *def_first_half) {
 
     Type *type = def_first_half->type;
 
-    // ï¿½zï¿½ñ‚©ƒ`ï¿½Fï¿½bï¿½N
+    // ”z—ñ‚©ƒ`ƒFƒbƒN
     while (consume("[")) {
         Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
         t->ty = ARRAY;
@@ -656,18 +648,18 @@ int get_size(Type *type) {
     return type->ty == PTR ? 8 : type->ty == CHAR ? 1 : 4;
 }
 
-// ï¿½Ü‚ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½Ïï¿½ï¿½Ì’ï¿½`ï¿½ï¿½ï¿½sï¿½ï¿½
-// int *foo; int *foo() {} ï¿½È‚Ç‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Aint *fooï¿½Ì•ï¿½ï¿½ï¿½ï¿½Ü‚Å‚ï¿½def_first_half
+// ‚Ü‚¾’è‹`‚³‚ê‚Ä‚¢‚È‚¢•Ï”‚Ì’è‹`‚ğs‚¤
+// int *foo; int *foo() {} ‚È‚Ç‚ª‚ ‚Á‚½ê‡Aint *foo‚Ì•”•ª‚Ü‚Å‚ªdef_first_half
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
     read_type(def_first_half);
     Type *type = def_first_half->type;
 
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ‰Šú‰»®
     Node *init_value = NULL;
     if (consume("=")) {
         if (consume("{")) {
-            // ï¿½zï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
-            // int a[3] = {1,2,3} ï¿½Ì‚æ‚¤ï¿½Èê‡
+            // ”z—ñ‚Ì‰Šú‰»
+            // int a[3] = {1,2,3} ‚Ì‚æ‚¤‚Èê‡
             init_value = static_cast<Node*>(calloc(1,sizeof(Node)));
             init_value->block = static_cast<Node**>(calloc(10,sizeof(Node)));
             int i;
@@ -678,19 +670,19 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
                 }
                 expect(",");
             }
-            if (type->array_size < i) { // arr[] = {1,2} ï¿½Ì‚æ‚¤ï¿½Èê‡
+            if (type->array_size < i) { // arr[] = {1,2} ‚Ì‚æ‚¤‚Èê‡
                 type->array_size = i + 1;
             }
-            for (i = i + 1; i < type->array_size; i++) { // arr[5] = {1,2} ï¿½Ì‚æ‚¤ï¿½Èê‡
+            for (i = i + 1; i < type->array_size; i++) { // arr[5] = {1,2} ‚Ì‚æ‚¤‚Èê‡
                 init_value->block[i] = new_node_num(0);
             }
         } else {
-            // ï¿½è”ï¿½ï¿½ï¿½Ìê‡
-            // int a = 3; ï¿½Ì‚æ‚¤ï¿½Èê‡
+            // ’è”®‚Ìê‡
+            // int a = 3; ‚Ì‚æ‚¤‚Èê‡
             init_value = expr();
 
-            // stringï¿½Ìê‡
-            // char arr[] = "abc"; ï¿½Ì‚æ‚¤ï¿½Èê‡
+            // string‚Ìê‡
+            // char arr[] = "abc"; ‚Ì‚æ‚¤‚Èê‡
             if (init_value->kind == ND_STRING) {
                 int len = strlen(init_value->string->value) + 1;
                 if (type->array_size < len) {
@@ -739,7 +731,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     return node;
 }
 
-// ï¿½ï¿½`ï¿½Ï‚İ‚Ì•Ïï¿½ï¿½ï¿½ï¿½Qï¿½Æ‚ï¿½ï¿½ï¿½
+// ’è‹`Ï‚İ‚Ì•Ï”‚ğQÆ‚·‚é
 Node *variable(Token *tok) {
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
@@ -759,11 +751,11 @@ Node *variable(Token *tok) {
     node->type = local_variable->type;
 
     while (true) {
-        // a[3] ï¿½ï¿½ *(a + 3) ï¿½Æ“ï¿½ï¿½ï¿½  tokï¿½ï¿½aï¿½Ü‚Åï¿½ï¿½Ä‚ï¿½ï¿½ï¿½
+        // a[3] ‚Í *(a + 3) ‚Æ“¯‚¶  tok‚Åa‚Ü‚Åæ‚ê‚Ä‚¢‚é
         if (consume("[")) {
-            // nodeï¿½ÍŒï¿½ï¿½ï¿½a 
-            // addï¿½ï¿½lhsï¿½ï¿½a, rhsï¿½ï¿½3*4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(4ï¿½ï¿½aï¿½ï¿½intï¿½Ìê‡ï¿½ÌƒTï¿½Cï¿½Y)
-            // addï¿½É‚ï¿½(a + 3)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            // node‚ÍŒ»İa 
+            // add‚Ìlhs‚Éa, rhs‚É3*4‚ğ“ü‚ê‚é(4‚Ía‚ªint‚Ìê‡‚ÌƒTƒCƒY)
+            // add‚É‚Í(a + 3)‚ª“ü‚é
             Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
             add->kind = ND_ADD;
             add->lhs = node;
@@ -771,12 +763,12 @@ Node *variable(Token *tok) {
                 int n = node->type->ptr_to->ty == INT ? 4 
                         : node->type->ptr_to->ty == CHAR ? 1
                         : 8;
-                // ï¿½^ï¿½ÌƒTï¿½Cï¿½Yï¿½ï¿½expr()ï¿½Ì’lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½rhsï¿½É“ï¿½ï¿½ï¿½ï¿½
+                // Œ^‚ÌƒTƒCƒY‚Éexpr()‚Ì’l‚ğ‚©‚¯‚½”š‚ğrhs‚É“ü‚ê‚é
                 add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
             }
 
-            // ï¿½Vï¿½ï¿½ï¿½ï¿½nodeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄAlhsï¿½ï¿½(a + 3)ï¿½ï¿½addï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-            // ï¿½ÅIï¿½Iï¿½ï¿½nodeï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½ßAnodeï¿½ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Vï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½
+            // V‚µ‚¢node‚ğì‚Á‚ÄAlhs‚É(a + 3)‚Ìadd‚ğ“ü‚ê‚é
+            // ÅI“I‚Énode‚ğ•Ô‚·‚½‚ßAnode‚ğV‚µ‚­XV‚µ‚Ä‚¢‚é
             node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_DEREF;
             node->lhs = add;
@@ -791,7 +783,7 @@ Node *variable(Token *tok) {
         }
 
         if (consume("->")) {
-            // x->y ï¿½ï¿½ (*x).y ï¿½Æ“ï¿½ï¿½ï¿½
+            // x->y ‚Í (*x).y ‚Æ“¯‚¶
             Type *t = node->type->ptr_to;
             node = new_binary(ND_DEREF, node, NULL);
             node->type = t;
@@ -831,9 +823,9 @@ Member *find_member(Token *tok, Type *type) {
     return NULL;
 }
 
-// ï¿½Ïï¿½ï¿½ğ–¼‘Oï¿½ÅŒï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½B
+// •Ï”‚ğ–¼‘O‚ÅŒŸõ‚·‚éB
 Variable *find_varable(Token *tok) {
-    // ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½[ï¿½Jï¿½ï¿½ï¿½Ì•Ïï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ‚Ü‚¸ƒ[ƒJƒ‹‚Ì•Ï”‚ğŒŸõ
     for (Variable *var = locals[current_func]; var; var = var->next) {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
             var->kind = Variable::LOCAL_VARIABLE;
@@ -841,7 +833,7 @@ Variable *find_varable(Token *tok) {
         }
     }
 
-    // ï¿½ï¿½ï¿½[ï¿½Jï¿½ï¿½ï¿½Ïï¿½ï¿½É•Ïï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îï¿½ï¿½ÉƒOï¿½ï¿½ï¿½[ï¿½oï¿½ï¿½ï¿½Ïï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ƒ[ƒJƒ‹•Ï”‚É•Ï”–¼‚ª–³‚¯‚ê‚ÎŸ‚ÉƒOƒ[ƒoƒ‹•Ï”‚ğŒŸõ
     for (Variable *var = globals[0]; var; var = var->next) {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
             var->kind = Variable::GLOBAL_VARIABLE;
@@ -849,21 +841,21 @@ Variable *find_varable(Token *tok) {
         }
     }
 
-    // ï¿½Ç‚ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½NULLï¿½ï¿½Ô‚ï¿½
+    // ‚Ç‚¿‚ç‚à‚È‚¯‚ê‚ÎNULL‚ğ•Ô‚·½
     return NULL;
 }
 
-// ï¿½Aï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ğ‘µ‚ï¿½ï¿½ï¿½
+// ƒAƒ‰ƒCƒƒ“ƒg‚ğ‘µ‚¦‚é
 // struct {int a; char b1; char b2; int c;}
 // a 4byte
 // b1 1byte
 // b2 1byte
-//    2byte <- 4byteï¿½É‚È‚ï¿½æ‚¤ï¿½ÉƒAï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ğ‘µ‚ï¿½ï¿½ï¿½
+//    2byte <- 4byte‚É‚È‚é‚æ‚¤‚ÉƒAƒ‰ƒCƒƒ“ƒg‚ğ‘µ‚¦‚é
 // c 4byte
 // align_to(12, 8) = 16
-// byte_sizeï¿½ï¿½ï¿½Å‚ï¿½ï¿½ß‚ï¿½alignï¿½Ì”{ï¿½ï¿½ï¿½ÉØ‚ï¿½ã‚°ï¿½ï¿½
+// byte_size‚ğÅ‚à‹ß‚¢align‚Ì”{”‚ÉØ‚èã‚°‚é
 int align_to(int byte_size, int align) {
-    return (byte_size + align - 1) & ~(align - 1); // 2ï¿½Ì‚×‚ï¿½ï¿½ï¿½ÅƒAï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ğ‘µ‚ï¿½ï¿½ï¿½
+    return (byte_size + align - 1) & ~(align - 1); // 2‚Ì‚×‚«æ‚ÅƒAƒ‰ƒCƒƒ“ƒg‚ğ‘µ‚¦‚é
 }
 
 void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type) {
