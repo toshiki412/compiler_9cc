@@ -227,6 +227,10 @@ Token *tokenize() {
             startswith(input_char_pointer, "!=") ||
             startswith(input_char_pointer, "<=") ||
             startswith(input_char_pointer, ">=") ||
+            startswith(input_char_pointer, "+=") ||
+            startswith(input_char_pointer, "-=") ||
+            startswith(input_char_pointer, "*=") ||
+            startswith(input_char_pointer, "/=") ||
             startswith(input_char_pointer, "->")) {
                 cur = new_token(TK_RESERVED, cur, input_char_pointer, 2);
                 input_char_pointer += 2;

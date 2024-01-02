@@ -507,6 +507,30 @@ int test_continue() {
   assert(5, j);
 }
 
+int test_addeq() {
+  int a = 10;
+  a += 5;
+  assert(15, a);
+}
+
+int test_subeq() {
+  int a = 10;
+  a -= 5;
+  assert(5, a);
+}
+
+int test_muleq() {
+  int a = 10;
+  a *= 5;
+  assert(50, a);
+}
+
+int test_diveq() {
+  int a = 10;
+  a /= 5;
+  assert(2, a);
+}
+
 int main() {
 
   test_calc();
@@ -538,6 +562,10 @@ int main() {
   test_enum();
   test_break();
   test_continue();
+  test_addeq();
+  test_subeq();
+  test_muleq();
+  test_diveq();
 
   printf("OK\n");
   return 0;
