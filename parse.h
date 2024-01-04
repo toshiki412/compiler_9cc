@@ -37,6 +37,9 @@ typedef enum {
     ND_BREAK,
     ND_NOT,                 // 論理否定
     ND_BITNOT,              // ビット否定
+    ND_BITAND,              // ビットAND
+    ND_BITOR,               // ビットOR
+    ND_BITXOR,              // ビットXOR
     ND_CONTINUE,
 } NodeKind;
 
@@ -138,6 +141,9 @@ Node *func();
 Node *stmt();
 Node *expr();
 Node *assign();
+Node *bit_or();
+Node *bit_xor();
+Node *bit_and();
 Node *equality();
 Node *relational();
 Node *add();

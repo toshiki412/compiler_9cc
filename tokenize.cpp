@@ -239,7 +239,7 @@ Token *tokenize() {
                 continue;
         }
 
-        if (strchr("+-*/()<>=;{},&[].!~", *input_char_pointer)) {
+        if (strchr("+-*/()<>=;{},&[].!~|^", *input_char_pointer)) {
             cur = new_token(TK_RESERVED, cur, input_char_pointer++, 1);
             continue;
         }

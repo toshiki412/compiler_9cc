@@ -580,6 +580,23 @@ int test_notbit() {
   assert(2, ~-3); //1111 1101 -> 0000 0010 -> 2
 }
 
+int test_bitop() {
+  assert(0, 0 & 0);
+  assert(0, 0 & 1);
+  assert(0, 1 & 0);
+  assert(1, 1 & 1);
+
+  assert(0, 0 | 0);
+  assert(1, 0 | 1);
+  assert(1, 1 | 0);
+  assert(1, 1 | 1);
+
+  assert(0, 0 ^ 0);
+  assert(1, 0 ^ 1);
+  assert(1, 1 ^ 0);
+  assert(0, 1 ^ 1);
+}
+
 int main() {
 
   test_calc();
