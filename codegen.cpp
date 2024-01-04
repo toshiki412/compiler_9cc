@@ -358,6 +358,15 @@ void gen(Node *node) {
         printf("    setle al\n");
         printf("    movzb rax, al\n");
         break;
+    case ND_BITAND:
+        printf("    and rax, rdi\n");
+        break;
+    case ND_BITOR:
+        printf("    or rax, rdi\n");
+        break;
+    case ND_BITXOR:
+        printf("    xor rax, rdi\n");
+        break;
     }
 
     

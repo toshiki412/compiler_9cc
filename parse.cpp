@@ -222,7 +222,7 @@ Node *expr() {
 }
 
 Node *assign() {
-    Node *node = equality();
+    Node *node = bit_or();
     if (consume("=")) {
         node = new_binary(ND_ASSIGN, node, assign());
     }
@@ -247,6 +247,30 @@ Node *assign() {
         node = new_binary(ND_ASSIGN, node, sub);
     }
 
+    return node;
+}
+
+Node *bit_or() {
+    Node *node = bit_xor();
+    while (consume("|")) {
+        node = new_binary(ND_BITOR, node, bit_xor());
+    }
+    return node;
+}
+
+Node *bit_xor() {
+    Node *node = bit_and();
+    while (consume("^")) {
+        node = new_binary(ND_BITXOR, node, bit_and());
+    }
+    return node;
+}
+
+Node *bit_and() {
+    Node *node = equality();
+    while (consume("&")) {
+        node = new_binary(ND_BITAND, node, equality());
+    }
     return node;
 }
 
