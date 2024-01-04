@@ -568,6 +568,18 @@ int test_minusminus() {
   assert(6, --a);
 }
 
+int test_not() {
+  assert(0, !1);
+  assert(1, !0);
+  assert(0, !2);
+}
+
+int test_notbit() {
+  assert(-1, ~0); //0000 0000 -> 1111 1111 -> -1
+  assert(-2, ~1); //0000 0001 -> 1111 1110 -> -2
+  assert(2, ~-3); //1111 1101 -> 0000 0010 -> 2
+}
+
 int main() {
 
   test_calc();
@@ -606,6 +618,8 @@ int main() {
   test_addeq_ptr();
   test_plusplus();
   test_minusminus();
+  test_not();
+  test_notbit();
 
   printf("OK\n");
   return 0;
