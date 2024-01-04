@@ -336,6 +336,10 @@ Node *unary() {
         return new_binary(ND_NOT, unary(), NULL);
     }
 
+    if (consume("~")) {
+        return new_binary(ND_BITNOT, unary(), NULL);
+    }
+
     if (consume("++")) { // PRE INCREMENT
         Node *node = unary();
         Node *add = new_binary(ND_ADD, node, new_node_num(1));

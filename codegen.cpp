@@ -310,6 +310,12 @@ void gen(Node *node) {
         printf("    movzb rax, al\n");
         printf("    push rax\n");
         break;
+    case ND_BITNOT:
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    not rax\n");
+        printf("    push rax\n");
+        break;
     }
 
     gen(node->lhs);
