@@ -568,6 +568,12 @@ int test_minusminus() {
   assert(6, --a);
 }
 
+int test_not() {
+  assert(0, !1);
+  assert(1, !0);
+  assert(0, !2);
+}
+
 int main() {
 
   test_calc();
@@ -606,6 +612,7 @@ int main() {
   test_addeq_ptr();
   test_plusplus();
   test_minusminus();
+  test_not();
 
   printf("OK\n");
   return 0;

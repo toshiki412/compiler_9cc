@@ -302,6 +302,14 @@ void gen(Node *node) {
         }
         printf("    push rdi\n");
         return;
+    case ND_NOT:
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    sete al\n");
+        printf("    movzb rax, al\n");
+        printf("    push rax\n");
+        break;
     }
 
     gen(node->lhs);
@@ -345,6 +353,7 @@ void gen(Node *node) {
         printf("    movzb rax, al\n");
         break;
     }
+
     
     printf("    push rax\n");
 }
