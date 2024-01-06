@@ -597,6 +597,18 @@ int test_bitop() {
   assert(0, 1 ^ 1);
 }
 
+int test_logicop() {
+  assert(0, 0 && 0);
+  assert(0, 0 && 1);
+  assert(0, 1 && 0);
+  assert(1, 1 && 1);
+
+  assert(0, 0 || 0);
+  assert(1, 0 || 1);
+  assert(1, 1 || 0);
+  assert(1, 1 || 1);
+}
+
 int main() {
 
   test_calc();
@@ -637,6 +649,8 @@ int main() {
   test_minusminus();
   test_not();
   test_notbit();
+  test_bitop();
+  test_logicop();
 
   printf("OK\n");
   return 0;
