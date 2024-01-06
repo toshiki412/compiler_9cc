@@ -183,6 +183,9 @@ ReservedWord reserved_words[] = {
     {"enum", TK_ENUM},
     {"break", TK_BREAK},
     {"continue", TK_CONTINUE},
+    {"switch", TK_SWITCH},
+    {"case", TK_CASE},
+    {"default", TK_DEFAULT},
     {"", TK_EOF},
 };
 

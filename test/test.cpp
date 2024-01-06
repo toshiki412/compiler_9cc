@@ -655,6 +655,37 @@ int test_ternary() {
   printf("\n");
 }
 
+int test_switch() {
+  int i = 0;
+  switch (0) {
+  case 0:
+    i = 15;
+    break;
+  case 1:
+    i = 16;
+    break;
+  case 2:
+    i = 17;
+    break;
+  default:
+    i = 10;
+    break;
+  }
+  assert(15, i);
+
+  switch (0) {
+  case 1:
+  case 2:
+    break;
+  default:
+    i = 10;
+  }
+
+  assert(10, i);
+
+  printf("\n");
+}
+
 int main() {
 
   test_calc();
@@ -722,6 +753,7 @@ int main() {
   printf("\n");
 
   test_ternary();
+  test_switch();
 
 
   printf("OK\n");

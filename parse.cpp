@@ -15,6 +15,9 @@ StructTag *struct_tags;
 
 EnumVariable *enum_variables;
 
+// ネストしたswitch文の場合、switch文のノードを保持する
+Node *current_switch = NULL;
+
 Node *new_node(NodeKind kind) {
     Node *node = static_cast<Node*>(calloc(1, sizeof(Node)));
     node->kind = kind;
@@ -201,6 +204,49 @@ Node *stmt() {
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_CONTINUE;
         expect(";");
+        return node;
+    }
+
+    if (consume_kind(TK_SWITCH)) {
+        // switch (A) B
+        expect("(");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_SWITCH;
+        node->lhs = expr(); // A
+        expect(")");
+
+        Node *sw = current_switch;
+        current_switch = node;
+
+        node->rhs = stmt(); // B
+
+        current_switch = sw;
+        return node;
+    }
+
+    if (consume_kind(TK_CASE)) {
+        if (!current_switch) {
+            error("case label not within a switch statement.");
+        }
+        int value = expect_number();
+        expect(":");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_CASE;
+        node->num_value = value;
+
+        node->case_next = current_switch->case_next;
+        current_switch->case_next = node;
+        return node;
+    }
+
+    if (consume_kind(TK_DEFAULT)) {
+        if (!current_switch) {
+            error("default label not within a switch statement.");
+        }
+        expect(":");
+        node = static_cast<Node*>(calloc(1,sizeof(Node)));
+        node->kind = ND_DEFAULT;
+        current_switch->default_case = node;
         return node;
     }
 

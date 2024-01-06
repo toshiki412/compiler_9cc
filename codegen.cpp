@@ -145,19 +145,19 @@ void gen(Node *node) {
 
         //for (A;B;C) D;
         gen(node->lhs->lhs);        //Aをコンパイルしたコード
-        printf(".Lbegin%03d:\n", label_id);
-        printf(".Lcontinue%03d:\n", label_id);
+        printf(".L.begin%03d:\n", label_id);
+        printf(".L.continue%03d:\n", label_id);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if (!node->lhs->rhs) {        //無限ループの対応
             printf("    push 1\n");
         }
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lend%03d\n", label_id);
+        printf("    je .L.end%03d\n", label_id);
         gen(node->rhs->lhs);        //Cをコンパイルしたコード 
         gen(node->rhs->rhs);        //Dをコンパイルしたコード
-        printf("    jmp .Lbegin%03d\n", label_id);
-        printf(".Lend%03d:\n", label_id);
+        printf("    jmp .L.begin%03d\n", label_id);
+        printf(".L.end%03d:\n", label_id);
 
         break_id = bid;
         conitnue_id = cid;
@@ -170,15 +170,15 @@ void gen(Node *node) {
         conitnue_id = label_id;
 
         //while (A) B;
-        printf(".Lbegin%03d:\n", label_id);
-        printf(".Lcontinue%03d:\n", label_id);
+        printf(".L.begin%03d:\n", label_id);
+        printf(".L.continue%03d:\n", label_id);
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lend%03d\n", label_id);
+        printf("    je .L.end%03d\n", label_id);
         gen(node->rhs);             //Bをコンパイルしたコード
-        printf("    jmp .Lbegin%03d\n", label_id);
-        printf(".Lend%03d:\n", label_id);
+        printf("    jmp .L.begin%03d\n", label_id);
+        printf(".L.end%03d:\n", label_id);
 
         break_id = bid;
         conitnue_id = cid;
@@ -188,30 +188,30 @@ void gen(Node *node) {
         gen(node->lhs);             //Aをコンパイルしたコード
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .Lelse%03d\n", label_id);
+        printf("    je .L.else%03d\n", label_id);
         if (node->rhs->kind == ND_ELSE) {
             gen(node->rhs->lhs);    //Bをコンパイルしたコード
         } else {
             gen(node->rhs);         //Bをコンパイルしたコード
         }
-        printf("    jmp .Lend%03d\n", label_id);
-        printf(".Lelse%03d:\n", label_id);
+        printf("    jmp .L.end%03d\n", label_id);
+        printf(".L.else%03d:\n", label_id);
         if (node->rhs->kind == ND_ELSE) {
             gen(node->rhs->rhs);    //Cをコンパイルしたコード
         }
-        printf(".Lend%03d:\n", label_id);
+        printf(".L.end%03d:\n", label_id);
         return;
     case ND_BREAK:
         if (break_id == 0) {
             error("stray break");
         }
-        printf("    jmp .Lend%03d\n", break_id);
+        printf("    jmp .L.end%03d\n", break_id);
         return;
     case ND_CONTINUE:
         if (conitnue_id == 0) {
             error("stray continue");
         }
-        printf("    jmp .Lcontinue%03d\n", conitnue_id);
+        printf("    jmp .L.continue%03d\n", conitnue_id);
         return;
     case ND_RETURN:
         gen(node->lhs);
@@ -357,6 +357,39 @@ void gen(Node *node) {
         printf(".L.else%03d:\n", label_id);
         gen(node->rhs->rhs); // 条件式が偽の場合
         printf(".L.end%03d:\n", label_id);
+        return;
+    case ND_SWITCH:
+        bid = break_id; //break_idを退避
+        break_id = label_id;
+        node->case_label = label_id;
+
+        //switch (A) B;
+        gen(node->lhs);             //Aをコンパイルしたコード
+        printf("    pop rax\n");
+
+        for (Node *n = node->case_next; n; n = n->case_next) {
+            gen_counter += 1;
+            n->case_label = gen_counter;
+            printf("    cmp rax, %d\n", n->num_value);
+            printf("    je .L.case%03d\n", n->case_label);
+        }
+
+        if (node->default_case) {
+            gen_counter += 1;
+            int i = gen_counter;
+            node->default_case->case_label = i;
+            printf("    jmp .L.case%03d\n", i);
+        }
+
+        printf("    jmp .L.end%03d\n", label_id);
+        gen(node->rhs);             //Bをコンパイルしたコード
+        printf(".L.end%03d:\n", label_id);
+
+        break_id = bid;
+        return;
+    case ND_CASE:
+    case ND_DEFAULT:
+        printf(".L.case%03d:\n", node->case_label);
         return;
     }
 
