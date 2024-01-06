@@ -44,6 +44,9 @@ typedef enum {
     ND_LOGICOR,             // 論理OR
     ND_TERNARY,             // 三項演算子
     ND_TERNARY_RIGHT,       // 三項演算子の右辺
+    ND_SWITCH,              // switch
+    ND_CASE,                // case
+    ND_DEFAULT,             // default
     ND_CONTINUE,
 } NodeKind;
 
@@ -99,6 +102,9 @@ struct Node {
     StringToken *string;    // kindがND_STRINGのとき使う
     Variable *variable;     // kindがND_GLOBAL_VARIABLE_DEFのとき使う
     Member *member;         // kindがND_MEMBERのとき使う
+    Node *case_next;        // kindがND_CASEのとき使う
+    Node *default_case;     // kindがND_SWITCHのとき使う
+    int case_label;         // kindがND_CASEのとき使う
 };
 
 typedef struct Variable Variable;
