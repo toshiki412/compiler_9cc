@@ -54,6 +54,7 @@ int test_calc() {
   assert(10, -10+20);
   assert(10, - -10);
   assert(10, - - +10);
+  printf("\n");
 }
 
 // 比較演算のテスト
@@ -76,6 +77,7 @@ int test_compare() {
   assert(1, 1>=0);
   assert(1, 1>=1);
   assert(0, 1>=2);
+  printf("\n");
 }
 
 // 変数のテスト
@@ -87,6 +89,7 @@ int test_variable() {
   assert(3, foo);
   assert(bar, 22);
   assert(14, foo + bar / 2);
+  printf("\n");
 }
 
 // returnのテストのための内部関数
@@ -108,6 +111,7 @@ int inner_multi_return() {
 int test_return() {
   assert(14, inner_test_return());
   assert(5, inner_multi_return());
+  printf("\n");
 }
 
 // ifのテスト
@@ -120,6 +124,7 @@ int test_if() {
   a = 3;
   if (a == 3) {
     ok();
+    printf("\n");
     return 0;
   }
   fail();
@@ -131,6 +136,7 @@ int test_while() {
   i = 0;
   while (i <= 10) i = i + 1;
   assert(11, i);
+  printf("\n");
 }
 
 // forのテスト
@@ -146,6 +152,7 @@ int test_for() {
   b = 0;
   for (;b < 10;) b = b + 1;
   assert(10, b);
+  printf("\n");
 }
 
 // 複数の制御構文のテストのための内部関数
@@ -165,6 +172,7 @@ int test_multi_control_stmt() {
   assert(3, a);
 
   assert(5, inner_multi_c());
+  printf("\n");
 }
 
 // ブロックのテストのための内部関数
@@ -181,6 +189,7 @@ int inner_block() {
 // ブロックのテスト
 int test_block() {
   assert(10, inner_block());
+  printf("\n");
 }
 
 // 関数呼び出しのテストのための関数
@@ -201,6 +210,7 @@ int test_func() {
   assert(1, foo());
   assert(7, bar(3, 4));
   assert(12, piyo(3, 4, 5));
+  printf("\n");
 }
 
 // ポインタのテストのための内部関数
@@ -226,6 +236,7 @@ int inner_test_pointer02() {
 int test_pointer() {
   inner_test_pointer01();
   inner_test_pointer02();
+  printf("\n");
 }
 
 // 関数定義のテストのための内部関数
@@ -236,6 +247,7 @@ int inner_test_func_def2(int a, int b, int c) { return a + c; }
 int test_func_def() {
   assert(3, inner_test_func_def1(1, 2));
   assert(4, inner_test_func_def2(1, 2, 3));
+  printf("\n");
 }
 
 // 再帰関数のテストのための内部関数
@@ -249,6 +261,7 @@ int test_func_def_recursive() {
   int a;
   a = 10;
   assert(55, sum(a));
+  printf("\n");
 }
 
 // ポインタ演算のテスト
@@ -265,6 +278,7 @@ int test_pointer_calc() {
 
   q = q - 2;
   assert(2, *q);
+  printf("\n");
 }
 
 // sizeofのテスト
@@ -280,6 +294,7 @@ int test_sizeof() {
   assert(4, sizeof(*y));
 
   assert(4, sizeof(1));
+  printf("\n");
 }
 
 // 配列のテスト
@@ -290,6 +305,7 @@ int test_array() {
   int *p;
   p = a;
   assert(3, *p + *(p + 1));
+  printf("\n");
 }
 
 // 配列アクセスのテスト
@@ -300,12 +316,14 @@ int test_array_access() {
   int *p;
   p = a;
   assert(3, p[0] + p[1]);
+  printf("\n");
 }
 
 // グローバル変数のテスト
 int test_global_variable() {
   global_a = 10;
   assert(10, global_a);
+  printf("\n");
 }
 
 // charのテスト
@@ -317,6 +335,7 @@ int test_char() {
   y = 4;
   assert(3, x[0] + y);
   assert(1, sizeof(x[0]));
+  printf("\n");
 }
 
 // 文字列のテスト
@@ -324,6 +343,7 @@ int test_string() {
   char *a;
   a = "abcd";
   assert(98, a[1]); // 98はasciiの'b'
+  printf("\n");
 }
 
 // グローバル変数の初期化式のテスト
@@ -341,6 +361,7 @@ int test_gvar_init() {
   
   assert(98, global_message_array[0]); //'b'のasciiは98
   assert(114, global_message_array[2]); //'r'のasciiは97
+  printf("\n");
 }
 
 // ローカル変数の初期化式のテスト
@@ -375,6 +396,7 @@ int test_lvar_init() {
   assert(102, efg[1]); //'f'のasciiは102
   assert(103, efg[2]); //'g'のasciiは103
   assert(0, efg[3]); //文字列の終端は0
+  printf("\n");
 }
 
 // 構造体のテスト
@@ -388,6 +410,7 @@ int test_struct() {
   abc.b = 20;
   assert(10, abc.a);
   assert(20, abc.b);
+  printf("\n");
 }
 
 int test_sturct_alignment() {
@@ -404,6 +427,7 @@ int test_sturct_alignment() {
   int size2 = &efg2.g - &efg2.e;
   assert(8, size2);
 
+  printf("\n");
 }
 
 int test_struct_arrow() {  
@@ -416,6 +440,7 @@ int test_struct_arrow() {
 
   struct Hoge *p = &hoge;
   assert(10, p->a);
+  printf("\n");
 }
 
 int test_typedef() {
@@ -427,6 +452,7 @@ int test_typedef() {
   MyHoge hoge;
   hoge.a = 10;
   assert(10, hoge.a);
+  printf("\n");
 }
 
 int test_enum() {
@@ -440,6 +466,7 @@ int test_enum() {
   assert(10, piyo2);
   assert(11, BBB);
   assert(12, CCC);
+  printf("\n");
 }
 
 int test_break() {
@@ -478,6 +505,7 @@ int test_break() {
   }
   assert(3, i);
   assert(4, j);
+  printf("\n");
 }
 
 int test_continue() {
@@ -505,30 +533,35 @@ int test_continue() {
 
   assert(10, i);
   assert(5, j);
+  printf("\n");
 }
 
 int test_addeq() {
   int a = 10;
   a += 5;
   assert(15, a);
+  printf("\n");
 }
 
 int test_subeq() {
   int a = 10;
   a -= 5;
   assert(5, a);
+  printf("\n");
 }
 
 int test_muleq() {
   int a = 10;
   a *= 5;
   assert(50, a);
+  printf("\n");
 }
 
 int test_diveq() {
   int a = 10;
   a /= 5;
   assert(2, a);
+  printf("\n");
 }
 
 int test_addeq_ptr() {
@@ -542,6 +575,7 @@ int test_addeq_ptr() {
 
   p -= 1;
   assert(2, *p);
+  printf("\n");
 }
 
 int test_plusplus() {
@@ -554,6 +588,7 @@ int test_plusplus() {
   assert(12, a++);
   assert(13, a);
   assert(14, ++a);
+  printf("\n");
 }
 
 int test_minusminus() {
@@ -566,18 +601,21 @@ int test_minusminus() {
   assert(8, a--);
   assert(7, a);
   assert(6, --a);
+  printf("\n");
 }
 
 int test_not() {
   assert(0, !1);
   assert(1, !0);
   assert(0, !2);
+  printf("\n");
 }
 
 int test_notbit() {
   assert(-1, ~0); //0000 0000 -> 1111 1111 -> -1
   assert(-2, ~1); //0000 0001 -> 1111 1110 -> -2
   assert(2, ~-3); //1111 1101 -> 0000 0010 -> 2
+  printf("\n");
 }
 
 int test_bitop() {
@@ -595,6 +633,7 @@ int test_bitop() {
   assert(1, 0 ^ 1);
   assert(1, 1 ^ 0);
   assert(0, 1 ^ 1);
+  printf("\n");
 }
 
 int test_logicop() {
@@ -607,6 +646,13 @@ int test_logicop() {
   assert(1, 0 || 1);
   assert(1, 1 || 0);
   assert(1, 1 || 1);
+  printf("\n");
+}
+
+int test_ternary() {
+  assert(1, 1 ? 1 : 2);
+  assert(2, 0 ? 1 : 2);
+  printf("\n");
 }
 
 int main() {
@@ -616,41 +662,67 @@ int main() {
   test_variable();
   test_return();
   test_if();
+
+  printf("\n");
+
   test_while();
   test_for();
   test_multi_control_stmt();
   test_block();
   test_func();
+
+  printf("\n");
+
   test_pointer();
   test_func_def();
   test_func_def_recursive();
   test_pointer_calc();
   test_sizeof();
+
+  printf("\n");
+
   test_array();
   test_array_access();
   test_global_variable();
   test_char();
   test_string();
+
+  printf("\n");
+
   test_gvar_init();
   test_lvar_init();
   test_struct();
   test_sturct_alignment();
   test_struct_arrow();
+
+  printf("\n");
+
   test_typedef();
   test_enum();
   test_break();
   test_continue();
   test_addeq();
+
+  printf("\n");
+
   test_subeq();
   test_muleq();
   test_diveq();
   test_addeq_ptr();
   test_plusplus();
+
+  printf("\n");
+
   test_minusminus();
   test_not();
   test_notbit();
   test_bitop();
   test_logicop();
+
+  printf("\n");
+
+  test_ternary();
+
 
   printf("OK\n");
   return 0;

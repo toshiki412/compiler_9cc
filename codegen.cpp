@@ -309,13 +309,13 @@ void gen(Node *node) {
         printf("    sete al\n");
         printf("    movzb rax, al\n");
         printf("    push rax\n");
-        break;
+        return;
     case ND_BITNOT:
         gen(node->lhs);
         printf("    pop rax\n");
         printf("    not rax\n");
         printf("    push rax\n");
-        break;
+        return;
     case ND_LOGICAND:
         gen(node->lhs);
         printf("    pop rax\n");
@@ -346,6 +346,18 @@ void gen(Node *node) {
         printf("    push 1\n");
         printf(".L.end%03d:\n", label_id);
         return; // breakでなくreturnにすることで、下のgenに行かないようにする
+    case ND_TERNARY:
+        // 三項演算子
+        gen(node->lhs); // 条件式
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .L.else%03d\n", label_id);
+        gen(node->rhs->lhs); // 条件式が真の場合
+        printf("    jmp .L.end%03d\n", label_id);
+        printf(".L.else%03d:\n", label_id);
+        gen(node->rhs->rhs); // 条件式が偽の場合
+        printf(".L.end%03d:\n", label_id);
+        return;
     }
 
     gen(node->lhs);
