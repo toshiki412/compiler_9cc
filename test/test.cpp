@@ -650,8 +650,8 @@ int test_logicop() {
 }
 
 int test_ternary() {
-  // assert(1, 1 ? 1 : 2);
-  // assert(2, 0 ? 1 : 2);
+  assert(1, 1 ? 1 : 2);
+  assert(2, 0 ? 1 : 2);
   printf("\n");
 }
 
@@ -721,7 +721,8 @@ int main() {
 
   printf("\n");
 
-  // test_ternary();
+  test_ternary();
+
 
   printf("OK\n");
   return 0;

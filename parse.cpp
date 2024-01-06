@@ -264,6 +264,7 @@ Node *conditional() {
     ternary_right->lhs = expr(); // c
     expect(":");
     ternary_right->rhs = conditional(); // d
+    ternary->rhs = ternary_right;
     return ternary;
 }
 
