@@ -316,6 +316,36 @@ void gen(Node *node) {
         printf("    not rax\n");
         printf("    push rax\n");
         break;
+    case ND_LOGICAND:
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .L.false%03d\n", label_id);
+        gen(node->rhs);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .L.false%03d\n", label_id);
+        printf("    push 1\n");
+        printf("    jmp .L.end%03d\n", label_id);
+        printf(".L.false%03d:\n", label_id);
+        printf("    push 0\n");
+        printf(".L.end%03d:\n", label_id);
+        return; // breakでなくreturnにすることで、下のgenに行かないようにする
+    case ND_LOGICOR:
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    jne .L.true%03d\n", label_id);
+        gen(node->rhs);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    jne .L.true%03d\n", label_id);
+        printf("    push 0\n");
+        printf("    jmp .L.end%03d\n", label_id);
+        printf(".L.true%03d:\n", label_id);
+        printf("    push 1\n");
+        printf(".L.end%03d:\n", label_id);
+        return; // breakでなくreturnにすることで、下のgenに行かないようにする
     }
 
     gen(node->lhs);

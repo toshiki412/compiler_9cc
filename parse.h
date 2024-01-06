@@ -40,6 +40,8 @@ typedef enum {
     ND_BITAND,              // ビットAND
     ND_BITOR,               // ビットOR
     ND_BITXOR,              // ビットXOR
+    ND_LOGICAND,            // 論理AND
+    ND_LOGICOR,             // 論理OR
     ND_CONTINUE,
 } NodeKind;
 
@@ -141,6 +143,8 @@ Node *func();
 Node *stmt();
 Node *expr();
 Node *assign();
+Node *logic_or();
+Node *logic_and();
 Node *bit_or();
 Node *bit_xor();
 Node *bit_and();
