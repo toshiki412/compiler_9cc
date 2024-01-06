@@ -222,7 +222,7 @@ Node *expr() {
 }
 
 Node *assign() {
-    Node *node = logic_or();
+    Node *node = conditional();
     if (consume("=")) {
         node = new_binary(ND_ASSIGN, node, assign());
     }
@@ -248,6 +248,23 @@ Node *assign() {
     }
 
     return node;
+}
+
+Node *conditional() {
+    // a = b ? c : d;
+    Node *node = logic_or();
+    if (!consume("?")) {
+        return node;
+    }
+
+    Node *ternary = new_node(ND_TERNARY);
+    ternary->lhs = node; // b
+
+    Node *ternary_right = new_node(ND_TERNARY_RIGHT);
+    ternary_right->lhs = expr(); // c
+    expect(":");
+    ternary_right->rhs = conditional(); // d
+    return ternary;
 }
 
 Node *logic_or() {
