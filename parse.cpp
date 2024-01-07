@@ -456,11 +456,20 @@ Node *unary() {
     }
 
     if (consume_kind(TK_SIZEOF)) {
-        Node *n = unary();
-        Type *t = get_type(n);
-        int size = t && t->ty == PTR ? 8 
-                : t && t->ty == CHAR ? 1
-                : 4;
+        Token *current_tok = token; // ( の前のトークンを保存
+        expect("(");
+
+        Type *t = read_type();
+
+        if (!t) { // sizeof(x)のxがintやcharなどではない場合
+            token = current_tok; // トークンを元に戻す
+            Node *n = unary(); // sizeof(x)のxをunaryで取得
+            t = get_type(n);
+        } else {
+            expect(")");
+        }
+
+        int size = get_byte_size(t);
         return new_node_num(size);
     }
     return primary();
@@ -571,14 +580,14 @@ Type *define_struct() {
 
     while (!consume("}")) {
         DefineFuncOrVariable *def_first_half = read_define_first_half();
-        read_type(def_first_half);
+        read_array_type_suffix(def_first_half);
         expect(";");
 
         Member *m = static_cast<Member*>(calloc(1,sizeof(Member)));
         m->name = static_cast<char*>(calloc(100,sizeof(char)));
         memcpy(m->name, def_first_half->ident->str, def_first_half->ident->len);
         m->type = def_first_half->type;
-        int size = get_size(def_first_half->type);
+        int size = get_byte_size(def_first_half->type);
         offset = align_to(offset, size);
         m->offset = offset;
         offset += size;
@@ -598,9 +607,9 @@ Type *define_struct() {
     return t;
 }
 
-// 関数か変数定義の前半部分を読んで、それを返す
-// int *foo; int *foo() {} があった場合、int *fooの部分までを読む
-DefineFuncOrVariable *read_define_first_half() {
+// 関数や変数定義の型を読み取る
+// int *foo; int *foo() {} があった場合、int *の部分までを読む
+Type *read_type() {
     Type *type = NULL;
     Token *t = token;
 
@@ -644,6 +653,17 @@ DefineFuncOrVariable *read_define_first_half() {
         t->ty = PTR;
         t->ptr_to = type;
         type = t; // 最終的にtypeは*intのような形になる
+    }
+
+    return type;
+}
+
+// 関数か変数定義の前半部分を読んで、それを返す
+// int *foo; int *foo() {} があった場合、int *fooの部分までを読む
+DefineFuncOrVariable *read_define_first_half() {
+    Type *type = read_type(); // int *の部分を読む
+    if (!type) {
+        return NULL;
     }
 
     Token *tok = consume_kind(TK_IDENT);
@@ -744,7 +764,9 @@ Node *initialize_local_variable(Node *node) {
     return assign;
 }
 
-void read_type(DefineFuncOrVariable *def_first_half) {
+// 与えられた型が配列型である場合、その配列のサイズも読み取って型情報に保存する
+// 配列型ではなかった場合は何もしない
+void read_array_type_suffix(DefineFuncOrVariable *def_first_half) {
     if (!def_first_half) {
         error("invalid def_first_half variable.");
     }
@@ -753,37 +775,47 @@ void read_type(DefineFuncOrVariable *def_first_half) {
 
     // 配列かチェック
     while (consume("[")) {
-        Type *t = static_cast<Type*>(calloc(1,sizeof(Type)));
+        Type *t = static_cast<Type*>(calloc(1,sizeof(Type))); // 新しい型情報を作る
         t->ty = ARRAY;
-        t->ptr_to = type;
-        Token *array_num = NULL;
+        t->ptr_to = type; // 元の型情報をtのポインタに設定する
         t->array_size = 0;
+
+        Token *array_num = NULL;
+        // 配列のサイズが指定されている場合
         if (array_num = consume_kind(TK_NUM)) {
             t->array_size = array_num->val;
         }
+
         type = t;
         expect("]");
     }
     def_first_half->type = type;
 }
 
-int get_size(Type *type) {
+int get_byte_size(Type *type) {
+    // sizeof(数値)の場合は4を返しておく
+    if (type == NULL) {
+        return 4;
+    }
+
     if (type->ty == STRUCT) {
         return type->byte_size;
     }
+
     if (type->ty == ARRAY) {
         if (type->array_size == 0) {
             error("array size is not specified.");
         }
-        return get_size(type->ptr_to) * type->array_size;
+        return get_byte_size(type->ptr_to) * type->array_size;
     }
+
     return type->ty == PTR ? 8 : type->ty == CHAR ? 1 : 4;
 }
 
 // まだ定義されていない変数の定義を行う
 // int *foo; int *foo() {} などがあった場合、int *fooの部分までがdef_first_half
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
-    read_type(def_first_half);
+    read_array_type_suffix(def_first_half);
     Type *type = def_first_half->type;
 
     // 初期化式
@@ -827,7 +859,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
     node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
     memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
-    node->byte_size = get_size(type);
+    node->byte_size = get_byte_size(type);
 
     Variable *local_variable = find_varable(def_first_half->ident);
     if (local_variable != NULL) {

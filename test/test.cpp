@@ -294,6 +294,22 @@ int test_sizeof() {
   assert(4, sizeof(*y));
 
   assert(4, sizeof(1));
+
+  assert(4, sizeof(int));
+  assert(1, sizeof(char));
+
+  struct SizeOfTest {
+    int a;
+    char b;
+    int c;
+  } size_of_test;
+  assert(12, sizeof(size_of_test)); // 4 + 1 + 4 + padding(3)
+  assert(12, sizeof(struct SizeOfTest));
+  assert(4, sizeof(size_of_test.a));
+
+  assert(4, sizeof(MyInt));
+  assert(8, sizeof(MyString));
+
   printf("\n");
 }
 
