@@ -31,6 +31,20 @@ enum Piyo {
   PIYO_C
 };
 
+enum PiyoB {
+  PIYO_B_A = 10,
+  PIYO_B_B,
+  PIYO_B_C, // カンマあり
+};
+
+size_t sizetval = 10; // size_tはintのエイリアス
+bool boolval = 1; // boolはintのエイリアス
+
+// extern とプロトタイプ宣言は無視される
+extern int extern_a;
+int assert(int expected, int actual);
+
+
 int assert(int expected, int actual) {
     if (expected == actual) {
         printf("|"); // printfのエラーは#includeがまだないため修正不要
@@ -735,6 +749,15 @@ void test_nest_type() {
   printf("\n");
 }
 
+void test_char_literal() {
+  assert(97, 'a');
+  assert(98, 'b');
+  assert(99, 'c');
+  assert(10, '\n');
+
+  printf("\n");
+}
+
 int main() {
 
   test_calc();
@@ -805,7 +828,9 @@ int main() {
   test_switch();
   test_void();
   test_nest_type();
+  test_char_literal();
 
+  printf("\n");
 
   printf("OK\n");
   return 0;

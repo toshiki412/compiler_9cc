@@ -104,6 +104,9 @@ Node *func() {
 
         // プロトタイプ宣言の場合は読み飛ばす
         if(consume(";")) {
+            //localsを消す必要あり
+            locals[current_func] = NULL;
+            current_func--;
             return NULL;
         }
 

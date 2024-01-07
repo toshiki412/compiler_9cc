@@ -129,7 +129,7 @@ void expect(const char *op) {
     if ( token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
         memcmp(token->str, op, token->len)) {
-            error_at2(token->str, "Expected \"%s\"", op);
+            error_at2(token->str, "Expected '%s'", op);
     }
     token = token->next;
 }
@@ -169,6 +169,59 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     tok->str = str;
     tok->len = len;
     cur->next = tok;
+    return tok;
+}
+
+// cがエスケープ文字である場合、エスケープ文字に対応する文字を返す
+char get_escape_char(char c) {
+    switch (c) {
+        case 'a':
+            return '\a';
+        case 'b':
+            return '\b';
+        case 'f':
+            return '\f';
+        case 'n':
+            return '\n';
+        case 'r':
+            return '\r';
+        case 'v':
+            return '\v';
+        case 't':
+            return '\t';
+        case 'e':
+            return 27;
+        case '0':
+            return 0;
+        default:
+            return c;
+    }
+}
+
+// 文字リテラルを読み込む
+Token *read_char_literal(Token *cur, char *start) {
+    char *p = start + 1;
+    if (*p == '\0') {
+        error_at(start, "unclosed char literal");
+    }
+
+    char c;
+    if (*p == '\\') {
+        p++;
+        c = get_escape_char(*p);
+        p++;
+    } else {
+        c = *p;
+        p++;
+    }
+    
+    if (*p != '\'') {
+        error_at(start, "char literal too long");
+    }
+    p++;
+
+    Token *tok = new_token(TK_NUM, cur, start, p - start);
+    tok->val = c;
     return tok;
 }
 
@@ -278,6 +331,12 @@ Token *tokenize() {
                 cur = new_token(TK_RESERVED, cur, input_char_pointer, 2);
                 input_char_pointer += 2;
                 continue;
+        }
+
+        if (*input_char_pointer == '\'') {
+            cur = read_char_literal(cur, input_char_pointer);
+            input_char_pointer += cur->len;
+            continue;
         }
 
         if (strchr("+-*/()<>=;{},&[].!~|^?:", *input_char_pointer)) {
