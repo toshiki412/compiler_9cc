@@ -1,6 +1,6 @@
 
 runTest() {
-    ./9cc "test/test.cpp" > tmp.s
+    ./9cc test/test.cpp > tmp.s
     cd func
     g++ -c func.cpp
     cd ../
