@@ -601,7 +601,7 @@ Type *define_struct() {
     t->byte_size = offset;
 
     if (ident) {
-        push_struct_tag_to_global("struct", ident, t); 
+        push_struct_tag_to_global("struct", ident, t, false); 
     }
 
     return t;
@@ -617,7 +617,7 @@ Type *read_type() {
     Token *ident = consume_kind(TK_IDENT);
     if (ident) {
         StructTag *tag = find_tag(NULL,ident);
-        if (tag) {
+        if (!tag->type->is_imcomplete) {
             type = tag->type;
         } else {
             token = t;
@@ -995,7 +995,7 @@ Member *find_member(Token *tok, Type *type) {
     if (!type) {
         error("invalid member.");
     }
-    char token_str[100];
+    char token_str[100] = {0};
     memcpy(token_str, tok->str, tok->len);
     for (Member *m = type->member_list; m; m = m->next) {
         if (memcmp(m->name, token_str, tok->len) == 0) {
@@ -1041,7 +1041,9 @@ int align_to(int byte_size, int align) {
     return (byte_size + align - 1) & ~(align - 1); // 2のべき乗でアライメントを揃える
 }
 
-void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type) {
+void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type, bool is_typedef) {
+    StructTag *tag = find_tag(prefix, tok);
+
     char *tag_name = static_cast<char*>(calloc(100,sizeof(char)));
     if (prefix) {
         memcpy(tag_name, prefix, strlen(prefix));
@@ -1050,17 +1052,24 @@ void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type) {
     } else {
         memcpy(tag_name, tok->str, tok->len);
     }
-    StructTag *tag = static_cast<StructTag*>(calloc(1,sizeof(StructTag)));
-    tag->name = tag_name;
-    tag->type = type;
-    if (struct_tags) {
-        tag->next = struct_tags;
+
+    if (is_typedef) {
+        tag->type = type;
+    } else {
+        // tag->typeを直接更新すると、すでにtag->typeを参照しているところが
+        // imcompleteなtypeを参照してしまうので、直接更新しない
+        tag->type->array_size = type->array_size;
+        tag->type->is_imcomplete = false;
+        tag->type->member_list = type->member_list;
+        tag->type->ptr_to = type->ptr_to;
+        tag->type->byte_size = type->byte_size;
+        tag->type->ty = type->ty;
     }
-    struct_tags = tag;
+
 }
 
 StructTag *find_tag(const char* prefix, Token *tok) {
-    char tag_name[100] = {0};
+    char *tag_name = static_cast<char*>(calloc(100,sizeof(char)));
     if (prefix) {
         memcpy(tag_name, prefix, strlen(prefix));
         memcpy(tag_name + strlen(prefix), " ", 1);
@@ -1068,12 +1077,23 @@ StructTag *find_tag(const char* prefix, Token *tok) {
     } else {
         memcpy(tag_name, tok->str, tok->len);
     }
+
     for (StructTag *tag = struct_tags; tag; tag = tag->next) {
         if (strcmp(tag->name, tag_name) == 0) {
             return tag;
         }
     }
-    return NULL;
+
+    // 不完全な状態で型を作っておく
+    StructTag *tag = static_cast<StructTag*>(calloc(1,sizeof(StructTag)));
+    tag->name = tag_name;
+    tag->type = static_cast<Type*>(calloc(1,sizeof(Type)));
+    tag->type->is_imcomplete = true;
+    if (struct_tags) {
+        tag->next = struct_tags;
+    }
+    struct_tags = tag;
+    return tag;
 }
 
 bool define_typedef() {
@@ -1082,7 +1102,7 @@ bool define_typedef() {
     }
     DefineFuncOrVariable *def_first_half = read_define_first_half();
     expect(";");
-    push_struct_tag_to_global(NULL, def_first_half->ident, def_first_half->type);
+    push_struct_tag_to_global(NULL, def_first_half->ident, def_first_half->type, true);
     return true;
 }
 
@@ -1124,7 +1144,7 @@ Type *define_enum() {
         expect(",");
 
         if (ident) {
-            push_struct_tag_to_global("enum", ident, int_type());
+            push_struct_tag_to_global("enum", ident, int_type(), false);
         }
     }
     return int_type();

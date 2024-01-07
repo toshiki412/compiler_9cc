@@ -19,6 +19,12 @@ typedef int MyInt;
 typedef char* MyString;
 typedef struct Hoge MyHoge;
 
+typedef struct NestType NestType;
+struct NestType {
+  struct NestType *next;
+  int a;
+};
+
 enum Piyo {
   PIYO_A = 10,
   PIYO_B,
@@ -708,6 +714,27 @@ void test_void() {
   printf("\n");
 }
 
+void test_nest_type() {
+  NestType test_a;
+  NestType *test_b;
+  test_a.a = 10;
+  test_b = &test_a;
+  assert(10, test_b->a);
+  assert(10, test_a.a);
+
+  NestType test_c;
+  test_c.a = 20;
+  test_a.next = &test_c;
+  assert(20, test_b->next->a);
+
+  NestType test_d;
+  test_d.a = 30;
+  test_c.next = &test_d;
+  assert(30, test_b->next->next->a);
+
+  printf("\n");
+}
+
 int main() {
 
   test_calc();
@@ -777,6 +804,7 @@ int main() {
   test_ternary();
   test_switch();
   test_void();
+  test_nest_type();
 
 
   printf("OK\n");
