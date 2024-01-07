@@ -749,6 +749,15 @@ void test_nest_type() {
   printf("\n");
 }
 
+void test_char_literal() {
+  assert(97, 'a');
+  assert(98, 'b');
+  assert(99, 'c');
+  assert(10, '\n');
+
+  printf("\n");
+}
+
 int main() {
 
   test_calc();
@@ -819,7 +828,9 @@ int main() {
   test_switch();
   test_void();
   test_nest_type();
+  test_char_literal();
 
+  printf("\n");
 
   printf("OK\n");
   return 0;

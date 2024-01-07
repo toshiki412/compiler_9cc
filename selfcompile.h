@@ -70,7 +70,9 @@ void expect(const char *op);
 int expect_number();
 bool at_eof();
 bool startswith(char *p, const char *q);
-Token *new_token(TokenKind kind, Token *cur, char *str, int len) ;
+Token *new_token(TokenKind kind, Token *cur, char *str, int len);
+Token *read_char_literal(Token *cur, char *start);
+char get_escape_char(char c);
 Token *tokenize();
 
 
