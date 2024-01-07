@@ -187,6 +187,8 @@ ReservedWord reserved_words[] = {
     {"int", TK_TYPE},
     {"char", TK_TYPE},
     {"void", TK_TYPE},
+    {"size_t", TK_TYPE},
+    {"bool", TK_TYPE},
     {"sizeof", TK_SIZEOF},
     {"struct", TK_STRUCT},
     {"typedef", TK_TYPEDEF},
@@ -233,6 +235,30 @@ Token *tokenize() {
                 error_at(input_char_pointer, "コメントが閉じられていません");
             }
             input_char_pointer = p + 2;
+            continue;
+        }
+
+        // includeをスキップ
+        if (startswith(input_char_pointer, "#include")) {
+            input_char_pointer += 8;
+            while (*input_char_pointer != '\n') {
+                input_char_pointer++;
+            }
+            continue;
+        }
+
+        // externをスキップ
+        if (startswith(input_char_pointer, "extern")) {
+            input_char_pointer += 6;
+            while (*input_char_pointer != '\n') {
+                input_char_pointer++;
+            }
+            continue;
+        }
+
+        // constをスキップ
+        if (startswith(input_char_pointer, "const")) {
+            input_char_pointer += 5;
             continue;
         }
 
