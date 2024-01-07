@@ -167,8 +167,9 @@ Node *primary();
 
 Type *get_type(Node *node);
 Type *define_struct();
-void read_type(DefineFuncOrVariable *def_first_half);
-int get_size(Type *type);
+void read_array_type_suffix(DefineFuncOrVariable *def_first_half);
+int get_byte_size(Type *type);
+Type *read_type();
 DefineFuncOrVariable *read_define_first_half();
 Node *initialize_local_variable(Node *node);
 Node *define_variable(DefineFuncOrVariable *def, Variable **varlist);

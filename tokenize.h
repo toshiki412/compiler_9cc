@@ -3,7 +3,7 @@
 
 //トークンの種類
 typedef enum {
-TK_RESERVED,    //記号 +, -, *, ==, [, ... など
+TK_RESERVED,    //記号 +, -, *, ==, [, など
 TK_IDENT,       //識別子 変数名や関数名
 TK_NUM,         //整数トークン
 TK_RETURN,      //return
@@ -36,8 +36,11 @@ struct Token {
 };
 
 char *read_file(char *path);
-void error_at(char *loc, const char *fmt, ...);
-void error(const char *fmt, ...);
+void error_at(char *loc, const char *fmt);
+void error_at2(char *loc, const char *fmt, char *op);
+void error(const char *fmt);
+void error2(const char *fmt, const char *op);
+void error3(const char *fmt, const char *op, const char *err);
 bool consume(const char *op);
 bool peek_token_str(const char *op);
 Token *consume_kind(TokenKind kind);
