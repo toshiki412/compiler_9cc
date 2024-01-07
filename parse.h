@@ -75,6 +75,7 @@ struct Type {
     size_t array_size;      // tyがARRAYのとき配列のサイズ
     Member *member_list;    // tyがSTRUCTのときメンバのリスト
     int byte_size;          // バイトサイズ
+    bool is_imcomplete;     // 型のネストが完了していないときtrue
 };
 
 typedef struct StringToken StringToken;
@@ -178,7 +179,7 @@ Node *struct_reference(Node *node);
 Member *find_member(Token *tok, Type *type);
 Variable *find_varable(Token *tok);
 int align_to(int n, int align);
-void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type);
+void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type, bool is_typedef);
 StructTag *find_tag(const char* prefix, Token *tok);
 bool define_typedef();
 Type *define_enum();
