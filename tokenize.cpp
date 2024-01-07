@@ -12,16 +12,16 @@ char *filename;
 char *read_file(char *path) {
     FILE *fp = fopen(path, "r");
     if (!fp) {
-        error("cannot open %s: %s", path, strerror(errno));
+        error3("cannot open %s: %s", path, strerror(errno));
     }
 
     // ファイルの長さを調べる
     if (fseek(fp, 0, SEEK_END) == -1) {
-        error("%s: fseek: %s", path, strerror(errno));
+        error3("%s: fseek: %s", path, strerror(errno));
     }
     size_t size = ftell(fp);
     if (fseek(fp, 0, SEEK_SET) == -1) {
-        error("%s: fseek: %s", path, strerror(errno));
+        error3("%s: fseek: %s", path, strerror(errno));
     }
 
     // ファイルの内容を読み込む
@@ -42,10 +42,7 @@ char *read_file(char *path) {
 
 //エラーを報告するための関数
 //locはエラーが発生した位置
-void error_at(char *loc, const char *fmt, ...) {
-    va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
-    va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
-
+void error_at2(char *loc, const char *fmt, const char *op) {
     // locが含まれている行の開始地点と終了地点を取得
     char *line = loc;
     while (user_input < line && line[-1] != '\n') {
@@ -73,17 +70,29 @@ void error_at(char *loc, const char *fmt, ...) {
     int pos = loc - line + indent;
     fprintf(stderr, "%*s", pos, ""); //posの数だけ空白を出力
     fprintf(stderr, "^ ");
-    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, fmt, op);
     fprintf(stderr, "\n");
     exit(1);
-    //printfの出力先は標準出力、fprintfの出力先は指定したファイルストリーム、vfprintfは可変引数を与えている
 }
 
-void error(const char *fmt, ...) {
-    va_list ap; //可変引数関数内で可変の引数を操作するためのデータ型
-    va_start(ap,fmt); //va_listの初期化、可変引数のアクセスを開始
+void error_at(char *loc, const char *fmt) {
+    error_at2(loc, fmt, "");
+}
 
-    vfprintf(stderr, fmt, ap);
+void error3(const char *fmt, const char *op, const char *err) {
+    fprintf(stderr, fmt, err);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
+void error2(const char *fmt, const char *op) {
+    fprintf(stderr, fmt, op);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
+void error(const char *fmt) {
+    fprintf(stderr, "%s", fmt);
     fprintf(stderr, "\n");
     exit(1);
 }
@@ -120,7 +129,7 @@ void expect(const char *op) {
     if ( token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
         memcmp(token->str, op, token->len)) {
-            error_at(token->str, "Expected \"%s\"", op);
+            error_at2(token->str, "Expected \"%s\"", op);
     }
     token = token->next;
 }

@@ -831,7 +831,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
 
     Variable *local_variable = find_varable(def_first_half->ident);
     if (local_variable != NULL) {
-        error("redefined variable: %s", node->variable_name);
+        error2("redefined variable: %s", node->variable_name);
     }
 
     // FIXME
@@ -871,7 +871,7 @@ Node *variable(Token *tok) {
 
     Variable *local_variable = find_varable(tok);
     if (local_variable == NULL) {
-        error("undefined variable: %s", node->variable_name);
+        error2("undefined variable: %s", node->variable_name);
     }
 
     if (local_variable->kind == Variable::LOCAL_VARIABLE) {
