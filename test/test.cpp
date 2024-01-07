@@ -686,6 +686,12 @@ int test_switch() {
   printf("\n");
 }
 
+void test_void() {
+  // コンパイルが通ればOK
+  assert(1, 1);
+  printf("\n");
+}
+
 int main() {
 
   test_calc();
@@ -754,6 +760,7 @@ int main() {
 
   test_ternary();
   test_switch();
+  test_void();
 
 
   printf("OK\n");

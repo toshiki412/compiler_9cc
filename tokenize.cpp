@@ -177,6 +177,7 @@ ReservedWord reserved_words[] = {
     {"for", TK_FOR},
     {"int", TK_TYPE},
     {"char", TK_TYPE},
+    {"void", TK_TYPE},
     {"sizeof", TK_SIZEOF},
     {"struct", TK_STRUCT},
     {"typedef", TK_TYPEDEF},

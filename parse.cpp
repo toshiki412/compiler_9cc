@@ -603,6 +603,8 @@ Type *define_struct() {
 DefineFuncOrVariable *read_define_first_half() {
     Type *type = NULL;
     Token *t = token;
+
+    // typedef‚Ì’è‹`‚ð’T‚·
     Token *ident = consume_kind(TK_IDENT);
     if (ident) {
         StructTag *tag = find_tag(NULL,ident);
@@ -612,12 +614,18 @@ DefineFuncOrVariable *read_define_first_half() {
             token = t;
         }
     }
+
+    // struct‚Ì’è‹`‚ð’T‚·
     if (!type) {
         type = define_struct();
     }
+
+    // enum‚Ì’è‹`‚ð’T‚·
     if (!type) {
         type = define_enum();
     }
+
+    // int‚âchar‚È‚Ç‚ÌŒ^‚ð’T‚·
     if (!type) {
         Token *type_token = consume_kind(TK_TYPE);
         if (!type_token) {
@@ -626,7 +634,7 @@ DefineFuncOrVariable *read_define_first_half() {
 
         type = static_cast<Type*>(calloc(1,sizeof(Type)));
         bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
-        type->ty = is_char ? CHAR : INT;
+        type->ty = is_char ? CHAR : INT; // Žb’èvoid‚Íint‚ÌƒGƒCƒŠƒAƒX
         type->ptr_to = NULL;
     }
 
