@@ -83,6 +83,7 @@ Node *func() {
     // int *foo() {} のような関数定義の場合, int *fooの部分を読む
     DefineFuncOrVariable *def_first_half = read_define_first_half();
 
+    // 引数の中身を読む
     if (consume("(")) {
         current_func++;
 
@@ -99,6 +100,11 @@ Node *func() {
                 break;
             }
             expect(",");
+        }
+
+        // プロトタイプ宣言の場合は読み飛ばす
+        if(consume(";")) {
+            return NULL;
         }
 
         node->lhs = stmt();
@@ -643,7 +649,7 @@ Type *read_type() {
 
         type = static_cast<Type*>(calloc(1,sizeof(Type)));
         bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
-        type->ty = is_char ? CHAR : INT; // 暫定voidはintのエイリアス
+        type->ty = is_char ? CHAR : INT; // 暫定void,bool,size_tはintのエイリアス
         type->ptr_to = NULL;
     }
 
@@ -768,7 +774,7 @@ Node *initialize_local_variable(Node *node) {
 // 配列型ではなかった場合は何もしない
 void read_array_type_suffix(DefineFuncOrVariable *def_first_half) {
     if (!def_first_half) {
-        error("invalid def_first_half variable.");
+        error("read_array_type_suffix error. Invalid def_first_half variable.");
     }
 
     Type *type = def_first_half->type;
@@ -1055,6 +1061,7 @@ void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type, bool 
 
     if (is_typedef) {
         tag->type = type;
+        tag->type->is_imcomplete = false; // なぜかフラグが立っているので落とす
     } else {
         // tag->typeを直接更新すると、すでにtag->typeを参照しているところが
         // imcompleteなtypeを参照してしまうので、直接更新しない
@@ -1123,6 +1130,11 @@ Type *define_enum() {
     expect("{");
     int enum_index = 0;
     while (true) {
+        // 最後の要素にはカンマがついてても良い
+        if (consume("}")) {
+            break;
+        }
+
         Token *tok = consume_kind(TK_IDENT);
 
         if (consume("=")) {
@@ -1142,10 +1154,10 @@ Type *define_enum() {
             break;
         }
         expect(",");
+    }
 
-        if (ident) {
-            push_struct_tag_to_global("enum", ident, int_type(), false);
-        }
+    if (ident) {
+        push_struct_tag_to_global("enum", ident, int_type(), false);
     }
     return int_type();
 }
