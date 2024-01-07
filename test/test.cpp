@@ -31,6 +31,20 @@ enum Piyo {
   PIYO_C
 };
 
+enum PiyoB {
+  PIYO_B_A = 10,
+  PIYO_B_B,
+  PIYO_B_C, // カンマあり
+};
+
+size_t sizetval = 10; // size_tはintのエイリアス
+bool boolval = 1; // boolはintのエイリアス
+
+// extern とプロトタイプ宣言は無視される
+extern int extern_a;
+int assert(int expected, int actual);
+
+
 int assert(int expected, int actual) {
     if (expected == actual) {
         printf("|"); // printfのエラーは#includeがまだないため修正不要

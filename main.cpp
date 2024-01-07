@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
         // トークナイズ
         Token *t = tokenize();
         if (!token) {
-            token = t;
+            token = t; // 最初のファイルのトークンをtokenにセット
         } else {
             Token *tt = token;
             while (true) {
@@ -17,9 +17,8 @@ int main(int argc, char **argv) {
                     tt->next = t;
                     break;
                 }
-                // tt = tt->next;
+                tt = tt->next;
             }
-            tt->next = t;
         }
     }
 
