@@ -47,10 +47,10 @@ Node *new_node_string(StringToken *s) {
 Node *code[100];
 
 // trueやfalse, errorなどの定数を定義する
-void define_constant(const char *name, int value) {
+void define_constant(char *name, int value) {
     EnumVariable *ev = static_cast<EnumVariable*>(calloc(1,sizeof(EnumVariable)));
-    ev->name = const_cast<char*>(name);
-    // ev->name = name;
+    // ev->name = const_cast<char*>(name);
+    ev->name = name;
     ev->value = value;
     ev->next = enum_variables;
     enum_variables = ev;
@@ -147,10 +147,10 @@ Node *stmt() {
     if (consume("{")) {
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_BLOCK;
-        // 100行までしか対応していない
-        node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        // 400行までしか対応していない
+        node->block = static_cast<Node**>(calloc(400,sizeof(Node)));
         for (int i = 0; !consume("}"); i++) {
-            if (i >= 100) {
+            if (i >= 400) {
                 error("too many statements in block.");
             }
             node->block[i] = stmt(); // {}内にあるstmtを追加
@@ -273,7 +273,7 @@ Node *stmt() {
             n = find_enum_variable(ident);
         }
         if (n) { // case x: のxがenumの場合
-            value = find_enum_variable(ident)->num_value;
+            value = n->num_value;
         } else { // 数字の場合
             token = t;
             value = expect_number();
@@ -541,7 +541,8 @@ Node *primary() {
             Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_FUNC_CALL;
             node->func_name = static_cast<char*>(calloc(1,sizeof(char)));
-            memcpy(node->func_name, tok->str, tok->len);
+            memccpy(node->func_name, tok->str, tok->len, sizeof(char));
+            // memcpy(node->func_name, tok->str, tok->len);
 
             // 引数 とりあえず10個まで
             node->block = static_cast<Node**>(calloc(10,sizeof(Node)));
@@ -629,6 +630,9 @@ Type *define_struct() {
     int offset = 0;
     int max_size = 0;
 
+    Member head;
+    Member *cur = &head;
+
     while (!consume("}")) {
         DefineFuncOrVariable *def_first_half = read_define_first_half();
         read_array_type_suffix(def_first_half);
@@ -642,14 +646,15 @@ Type *define_struct() {
         offset = align_to(offset, size);
         m->offset = offset;
         offset += size;
-        m->next = t->member_list;
-        t->member_list = m;
+        cur->next = m;
+        cur = m;
 
         if (max_size <= 8 && max_size < size) {
             max_size = size;
         }
     }
-    t->byte_size = offset;
+    t->member_list = head.next;
+    t->byte_size = align_to(offset, max_size);
 
     if (ident) {
         push_struct_tag_to_global("struct", ident, t, false); 
@@ -868,28 +873,61 @@ int get_byte_size(Type *type) {
 Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_list) {
     read_array_type_suffix(def_first_half);
     Type *type = def_first_half->type;
+    Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
+    node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
+    memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
 
     // 初期化式
     Node *init_value = NULL;
     if (consume("=")) {
         if (consume("{")) {
-            // 配列の初期化
-            // int a[3] = {1,2,3} のような場合
             init_value = static_cast<Node*>(calloc(1,sizeof(Node)));
             init_value->block = static_cast<Node**>(calloc(10,sizeof(Node)));
             int i;
-            for (i = 0; !consume("}"); i++) {
-                init_value->block[i] = expr();
-                if (consume("}")) {
-                    break;
+
+            Token *t = token;
+            if (consume("{")) {
+                // 構造体の初期化対応
+                // int a[3][3] = {{1,2,3},{4,5,6},{7,8,9}} のような場合
+                token = t; // 一度{{まで読んだトークンを{まで読んだところに戻す
+                int count = 0;
+                while (!consume("}")) {
+                    expect("{");
+                    count++;
+                    Member *m = type->ptr_to->member_list;
+                    while (true) {
+                        init_value->block[i] = expr();
+                        init_value->block[i]->type = m->type;
+                        i++;
+                        m = m->next;
+                        if (consume("}")) {
+                            break;
+                        }
+                        expect(",");
+                    }
+                    expect(","); // 最後に必ず,がつく前提
                 }
-                expect(",");
-            }
-            if (type->array_size < i) { // arr[] = {1,2} のような場合
-                type->array_size = i + 1;
-            }
-            for (i = i + 1; i < type->array_size; i++) { // arr[5] = {1,2} のような場合
-                init_value->block[i] = new_node_num(0);
+
+                if (type->array_size < count) { // arr[] = {{1,2},{3,4}} のような場合
+                    type->array_size = count;
+                }
+            } else {
+                // 配列の初期化
+                // int a[3] = {1,2,3} のような場合
+                for (i = 0; !consume("}"); i++) {
+                    init_value->block[i] = expr();
+                    init_value->block[i]->type = type->ptr_to;
+                    if (consume("}")) {
+                        break;
+                    }
+                    expect(",");
+                }
+                if (type->array_size < i) { // arr[] = {1,2} のような場合
+                    type->array_size = i + 1;
+                }
+                for (i = i + 1; i < type->array_size; i++) { // arr[5] = {1,2} のような場合
+                    init_value->block[i] = new_node_num(0);
+                }
             }
         } else {
             // 定数式の場合
@@ -907,9 +945,6 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         }
     }
 
-    Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
-    memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
     node->byte_size = get_byte_size(type);
 
     Variable *local_variable = find_varable(def_first_half->ident);

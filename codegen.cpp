@@ -58,7 +58,7 @@ void gen(Node *node) {
         if (type->ty == ARRAY) {
             return;
         }
-        
+
         printf("    pop rax\n");
         if (type && type->ty == CHAR) {
             printf("    movsx rax, BYTE PTR [rax]\n");
@@ -257,7 +257,7 @@ void gen(Node *node) {
         // ”z—ñ‚Ì‰Šú‰»Ž®‚Ìê‡
         if (node->type->ty == ARRAY && node->variable->init_value->block) {
             for (int i = 0; node->variable->init_value->block[i]; i++) {
-                switch (node->type->ptr_to->ty) {
+                switch (node->variable->init_value->block[i]->type->ty) {
                 case INT:
                     printf("    .long 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;

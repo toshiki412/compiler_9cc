@@ -146,7 +146,7 @@ Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int num_value);
 Node *new_node_string(StringToken *s);
-void define_constant(const char *name, int value);
+void define_constant(char *name, int value);
 
 void program();
 Node *func();
