@@ -569,7 +569,7 @@ int test_continue() {
   }
 
   assert(10, i);
-  assert(5, j);
+  assert(6, j);
   printf("\n");
 }
 

@@ -151,7 +151,6 @@ void gen(Node *node) {
         //for (A;B;C) D;
         gen(node->lhs->lhs);        //Aをコンパイルしたコード
         printf(".L.begin%03d:\n", label_id);
-        printf(".L.continue%03d:\n", label_id);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if (!node->lhs->rhs) {        //無限ループの対応
             printf("    push 1\n");
@@ -159,8 +158,9 @@ void gen(Node *node) {
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
         printf("    je .L.end%03d\n", label_id);
-        gen(node->rhs->lhs);        //Cをコンパイルしたコード 
         gen(node->rhs->rhs);        //Dをコンパイルしたコード
+        printf(".L.continue%03d:\n", label_id);
+        gen(node->rhs->lhs);        //Cをコンパイルしたコード 
         printf("    jmp .L.begin%03d\n", label_id);
         printf(".L.end%03d:\n", label_id);
 
