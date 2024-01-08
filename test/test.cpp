@@ -759,6 +759,17 @@ void test_char_literal() {
   printf("\n");
 }
 
+void test_multi_array() {
+  int array[2][3];
+  array[0][0] = 1;
+
+  struct {int a; int b;} array2[2][3][2];
+  array2[0][0][1].a = 1;
+  array2[0][1][1].a = 3;
+  assert(1, array2[0][0][1].a);
+  assert(3, array2[0][1][1].a);
+}
+
 int main() {
 
   test_calc();
@@ -830,6 +841,10 @@ int main() {
   test_void();
   test_nest_type();
   test_char_literal();
+
+  printf("\n");
+
+  test_multi_array();
 
   printf("\n");
 

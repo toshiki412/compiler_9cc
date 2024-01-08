@@ -980,23 +980,18 @@ Node *variable(Token *tok) {
             Node *add = static_cast<Node*>(calloc(1,sizeof(Node)));
             add->kind = ND_ADD;
             add->lhs = node;
-            if (node->type && node->type->ty != INT) {
-                int n = node->type->ptr_to->ty == INT ? 4 
-                        : node->type->ptr_to->ty == CHAR ? 1
-                        : 8;
-                // 型のサイズにexpr()の値をかけた数字をrhsに入れる
-                add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
-            }
 
-            // nodeのtypeを取っておく
-            Type *node_type = node->type;
+            Type *type = node->type->ptr_to;
+            int size = get_byte_size(type);
+            // 型のサイズにexpr()の値をかけた数字をrhsに入れる
+            add->rhs = new_binary(ND_MUL, expr(), new_node_num(size));
 
             // 新しいnodeを作って、lhsに(a + 3)のaddを入れる
             // 最終的にnodeを返すため、nodeを新しく更新している
             node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_DEREF;
             node->lhs = add;
-            node->type = node_type->ptr_to;
+            node->type = type;
             node->variable_name = node_varname;
 
             expect("]");
