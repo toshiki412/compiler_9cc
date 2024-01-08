@@ -257,6 +257,11 @@ void gen(Node *node) {
         // ”z—ñ‚Ì‰Šú‰»Ž®‚Ìê‡
         if (node->type->ty == ARRAY && node->variable->init_value->block) {
             for (int i = 0; node->variable->init_value->block[i]; i++) {
+                if (node->variable->init_value->block[i]->kind == ND_PADDING) {
+                    printf("    .zero 0x%x\n", node->variable->init_value->block[i]->byte_size);
+                    continue;
+                }
+                
                 switch (node->variable->init_value->block[i]->type->ty) {
                 case INT:
                     printf("    .long 0x%x\n", node->variable->init_value->block[i]->num_value);

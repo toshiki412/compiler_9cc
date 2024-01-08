@@ -48,6 +48,7 @@ typedef enum {
     ND_CASE,                // case
     ND_DEFAULT,             // default
     ND_CONTINUE,
+    ND_PADDING,             // パディング
 } NodeKind;
 
 typedef struct Member Member;

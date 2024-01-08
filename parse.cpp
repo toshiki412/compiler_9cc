@@ -1,10 +1,10 @@
 #include "9cc.h"
 
-// ローカル変数 100個の関数まで対応
-Variable *locals[100];
+// ローカル変数 400個の関数まで対応
+Variable *locals[400];
 
 // グローバル変数
-Variable *globals[100];
+Variable *globals[400];
 
 int current_func = 0;
 
@@ -43,13 +43,12 @@ Node *new_node_string(StringToken *s) {
     return node;
 }
 
-// 100行までしか対応していない
-Node *code[100];
+// 400行までしか対応していない
+Node *code[400];
 
 // trueやfalse, errorなどの定数を定義する
 void define_constant(char *name, int value) {
     EnumVariable *ev = static_cast<EnumVariable*>(calloc(1,sizeof(EnumVariable)));
-    // ev->name = const_cast<char*>(name);
     ev->name = name;
     ev->value = value;
     ev->next = enum_variables;
@@ -71,7 +70,7 @@ void program() {
         if (!n) {
             continue;
         }
-        if (i>=100) {
+        if (i>=400) {
             error("too many global variables.");
         }
         code[i++] = n;
@@ -109,7 +108,7 @@ Node *func() {
 
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_FUNC_DEF;
-        node->func_name = static_cast<char*>(calloc(100,sizeof(char)));
+        node->func_name = static_cast<char*>(calloc(400,sizeof(char)));
         memcpy(node->func_name, def_first_half->ident->str, def_first_half->ident->len);
         node->func_args = static_cast<Node**>(calloc(10,sizeof(Node*))); //引数10個分の配列の長さを作る
 
@@ -301,6 +300,9 @@ Node *stmt() {
     }
 
     DefineFuncOrVariable *def_first_half = read_define_first_half();
+    fprintf(stderr, "----here\n");
+    fprintf(stderr, "def_first_half->ident->str: %s\n", def_first_half->ident->str);
+    fprintf(stderr, "----end\n");
     if (def_first_half) {
         node = define_variable(def_first_half, locals);
         node = initialize_local_variable(node);
@@ -568,7 +570,7 @@ Node *primary() {
 
     if (tok = consume_kind(TK_STRING)) {
         StringToken *s = static_cast<StringToken*>(calloc(1,sizeof(StringToken)));
-        s->value = static_cast<char*>(calloc(100,sizeof(char)));
+        s->value = static_cast<char*>(calloc(400,sizeof(char)));
         memcpy(s->value, tok->str, tok->len);
         if (strings) {
             s->index = strings->index + 1;
@@ -639,7 +641,7 @@ Type *define_struct() {
         expect(";");
 
         Member *m = static_cast<Member*>(calloc(1,sizeof(Member)));
-        m->name = static_cast<char*>(calloc(100,sizeof(char)));
+        m->name = static_cast<char*>(calloc(400,sizeof(char)));
         memcpy(m->name, def_first_half->ident->str, def_first_half->ident->len);
         m->type = def_first_half->type;
         int size = get_byte_size(def_first_half->type);
@@ -698,7 +700,7 @@ Type *read_type() {
         }
 
         type = static_cast<Type*>(calloc(1,sizeof(Type)));
-        bool is_char = memcmp("char", type_token->str, type_token->len) == 0;
+        int is_char = memcmp("char", type_token->str, type_token->len) == 0;
         type->ty = is_char ? CHAR : INT; // 暫定void,bool,size_tはintのエイリアス
         type->ptr_to = NULL;
     }
@@ -744,7 +746,7 @@ Node *initialize_local_variable(Node *node) {
 
     if (node->type->ty == ARRAY && node->variable->init_value->block) {
         Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
-        block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        block_node->block = static_cast<Node**>(calloc(400,sizeof(Node)));
         block_node->kind = ND_BLOCK;
 
         for (int i = 0; node->variable->init_value->block[i]; i++) {
@@ -777,7 +779,7 @@ Node *initialize_local_variable(Node *node) {
     // これはarr[] = {'f','o','o','\0'}と同じｽ
     if (node->variable->init_value->kind == ND_STRING) {
         Node *block_node = static_cast<Node*>(calloc(1,sizeof(Node)));
-        block_node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
+        block_node->block = static_cast<Node**>(calloc(400,sizeof(Node)));
         block_node->kind = ND_BLOCK;
 
         int len = strlen(node->variable->init_value->string->value) + 1;
@@ -874,7 +876,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     read_array_type_suffix(def_first_half);
     Type *type = def_first_half->type;
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
+    node->variable_name = static_cast<char*>(calloc(400,sizeof(char)));
     memcpy(node->variable_name, def_first_half->ident->str, def_first_half->ident->len);
 
     // 初期化式
@@ -883,7 +885,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         if (consume("{")) {
             init_value = static_cast<Node*>(calloc(1,sizeof(Node)));
             init_value->block = static_cast<Node**>(calloc(10,sizeof(Node)));
-            int i;
+            int i = 0;
 
             Token *t = token;
             if (consume("{")) {
@@ -895,18 +897,27 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
                     expect("{");
                     count++;
                     Member *m = type->ptr_to->member_list;
+                    int total_byte_size = 0;
                     while (true) {
                         init_value->block[i] = expr();
                         init_value->block[i]->type = m->type;
+                        total_byte_size += get_byte_size(m->type);
                         i++;
                         m = m->next;
                         if (consume("}")) {
                             break;
                         }
                         expect(",");
+
+                        if (total_byte_size != type->ptr_to->byte_size) {
+                            init_value->block[i] = new_node(ND_PADDING);
+                            init_value->block[i]->byte_size = type->ptr_to->byte_size - total_byte_size;
+                            i++;
+                        }
                     }
                     expect(","); // 最後に必ず,がつく前提
                 }
+
 
                 if (type->array_size < count) { // arr[] = {{1,2},{3,4}} のような場合
                     type->array_size = count;
@@ -979,7 +990,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
     node->type = local_variable->type;
     node->variable = local_variable;
     variable_list[current_index] = local_variable;
-    char name[100] = {0};
+    char name[400] = {0};
     memcpy(name, def_first_half->ident->str, def_first_half->ident->len);
     // fprintf(stderr, "*NEW VARIABLE* %s\n", name);
     return node;
@@ -988,7 +999,7 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
 // 定義済みの変数を参照する
 Node *variable(Token *tok) {
     Node *node = static_cast<Node*>(calloc(1,sizeof(Node)));
-    node->variable_name = static_cast<char*>(calloc(100,sizeof(char)));
+    node->variable_name = static_cast<char*>(calloc(400,sizeof(char)));
     memcpy(node->variable_name, tok->str, tok->len);
 
     Variable *local_variable = find_varable(tok);
@@ -1087,7 +1098,7 @@ Member *find_member(Token *tok, Type *type) {
     if (!type) {
         error("invalid member.");
     }
-    char token_str[100] = {0};
+    char token_str[400] = {0};
     memcpy(token_str, tok->str, tok->len);
     for (Member *m = type->member_list; m; m = m->next) {
         if (memcmp(m->name, token_str, tok->len) == 0) {
@@ -1095,7 +1106,6 @@ Member *find_member(Token *tok, Type *type) {
         }
     }
     error("undefined member");
-    return NULL;
 }
 
 // 変数を名前で検索する。
@@ -1136,7 +1146,7 @@ int align_to(int byte_size, int align) {
 void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type, bool is_typedef) {
     StructTag *tag = find_tag(prefix, tok);
 
-    char *tag_name = static_cast<char*>(calloc(100,sizeof(char)));
+    char *tag_name = static_cast<char*>(calloc(400,sizeof(char)));
     if (prefix) {
         memcpy(tag_name, prefix, strlen(prefix));
         memcpy(tag_name + strlen(prefix), " ", 1);
@@ -1162,7 +1172,7 @@ void push_struct_tag_to_global(const char* prefix, Token *tok, Type *type, bool 
 }
 
 StructTag *find_tag(const char* prefix, Token *tok) {
-    char *tag_name = static_cast<char*>(calloc(100,sizeof(char)));
+    char *tag_name = static_cast<char*>(calloc(400,sizeof(char)));
     if (prefix) {
         memcpy(tag_name, prefix, strlen(prefix));
         memcpy(tag_name + strlen(prefix), " ", 1);
@@ -1230,7 +1240,7 @@ Type *define_enum() {
         }
 
         EnumVariable *e = static_cast<EnumVariable*>(calloc(1,sizeof(EnumVariable)));
-        e->name = static_cast<char*>(calloc(100,sizeof(char)));
+        e->name = static_cast<char*>(calloc(400,sizeof(char)));
         memcpy(e->name, tok->str, tok->len);
         e->value = enum_index;
         e->next = enum_variables;
@@ -1256,7 +1266,7 @@ Type *int_type() {
 }
 
 Node *find_enum_variable(Token *tok) {
-    char token_str[100] = {0};
+    char token_str[400] = {0};
     memcpy(token_str, tok->str, tok->len);
 
     for (EnumVariable *e = enum_variables; e; e = e->next) {
