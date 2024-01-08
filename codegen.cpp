@@ -54,6 +54,11 @@ void gen(Node *node) {
     case ND_DEREF:
         gen(node->lhs);
         type = get_type(node);
+
+        if (type->ty == ARRAY) {
+            return;
+        }
+
         printf("    pop rax\n");
         if (type && type->ty == CHAR) {
             printf("    movsx rax, BYTE PTR [rax]\n");
@@ -146,7 +151,6 @@ void gen(Node *node) {
         //for (A;B;C) D;
         gen(node->lhs->lhs);        //Aをコンパイルしたコード
         printf(".L.begin%03d:\n", label_id);
-        printf(".L.continue%03d:\n", label_id);
         gen(node->lhs->rhs);        //Bをコンパイルしたコード
         if (!node->lhs->rhs) {        //無限ループの対応
             printf("    push 1\n");
@@ -154,8 +158,9 @@ void gen(Node *node) {
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
         printf("    je .L.end%03d\n", label_id);
-        gen(node->rhs->lhs);        //Cをコンパイルしたコード 
         gen(node->rhs->rhs);        //Dをコンパイルしたコード
+        printf(".L.continue%03d:\n", label_id);
+        gen(node->rhs->lhs);        //Cをコンパイルしたコード 
         printf("    jmp .L.begin%03d\n", label_id);
         printf(".L.end%03d:\n", label_id);
 
@@ -252,7 +257,12 @@ void gen(Node *node) {
         // 配列の初期化式の場合
         if (node->type->ty == ARRAY && node->variable->init_value->block) {
             for (int i = 0; node->variable->init_value->block[i]; i++) {
-                switch (node->type->ptr_to->ty) {
+                if (node->variable->init_value->block[i]->kind == ND_PADDING) {
+                    printf("    .zero 0x%x\n", node->variable->init_value->block[i]->byte_size);
+                    continue;
+                }
+                
+                switch (node->variable->init_value->block[i]->type->ty) {
                 case INT:
                     printf("    .long 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
@@ -260,7 +270,7 @@ void gen(Node *node) {
                     printf("    .byte 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
                 case PTR:
-                    printf("    .quad %x\n", node->variable->init_value->block[i]->num_value);
+                    printf("    .quad .LC_%d\n", node->variable->init_value->block[i]->string->index);
                     break;
                 default:
                     break;

@@ -1,7 +1,7 @@
 #include "9cc.h"
 
 int main(int argc, char **argv) {
-    // // 複数の入力ファイル読み込み
+    // 複数の入力ファイル読み込み
     for (int i = 1; i < argc; i++) {
         filename = argv[i];
         user_input = read_file(filename);
@@ -21,7 +21,6 @@ int main(int argc, char **argv) {
             }
         }
     }
-
 
 
     // パース
