@@ -46,8 +46,24 @@ Node *new_node_string(StringToken *s) {
 // 100s‚Ü‚Å‚µ‚©‘Î‰‚µ‚Ä‚¢‚È‚¢
 Node *code[100];
 
+// true‚âfalse, error‚È‚Ç‚Ì’è”‚ğ’è‹`‚·‚é
+void define_constant(char *name, int value) {
+    EnumVariable *ev = static_cast<EnumVariable*>(calloc(1,sizeof(EnumVariable)));
+    ev->name = name;
+    ev->value = value;
+    ev->next = enum_variables;
+    enum_variables = ev;
+}
+
 // 9cc.h‚É\•¶‚ ‚è
 void program() {
+    define_constant("errno", 0);
+    define_constant("SEEK_END", 2);
+    define_constant("SEEK_SET", 0);
+    define_constant("stderr", 0);
+    define_constant("NULL", 0);
+    define_constant("false", 0);
+    define_constant("true", 0);
     int i = 0;
     while (!at_eof()) {
         Node *n = func();
@@ -481,6 +497,7 @@ Node *unary() {
         int size = get_byte_size(t);
         return new_node_num(size);
     }
+
     return primary();
 }
 

@@ -242,6 +242,7 @@ ReservedWord reserved_words[] = {
     {"void", TK_TYPE},
     {"size_t", TK_TYPE},
     {"bool", TK_TYPE},
+    {"FILE", TK_TYPE}, // セルフコンパイルのため
     {"sizeof", TK_SIZEOF},
     {"struct", TK_STRUCT},
     {"typedef", TK_TYPEDEF},
@@ -385,6 +386,7 @@ Token *tokenize() {
             continue;
         }
 
+        // string literalの場合
         if ('"' == *input_char_pointer) {
             // "HELLO"の場合、input_char_pointerは"を指している
 
@@ -393,9 +395,21 @@ Token *tokenize() {
 
             // cが最後の"を指すまで進める
             char *c = input_char_pointer;
-            while ('"' != *c) {
+
+            while (true) {
+                // \" の場合、cは"を指している
+                if (startswith(c, "\\\"")) {
+                    c += 2;
+                    continue;
+                }
+
+                if (*c == '"') {
+                    break;
+                }
+
                 c++;
             }
+
             int len = c - input_char_pointer; // lenはHELLOの文字数
 
             cur = new_token(TK_STRING, cur, input_char_pointer, len);
