@@ -260,7 +260,7 @@ void gen(Node *node) {
                     printf("    .byte 0x%x\n", node->variable->init_value->block[i]->num_value);
                     break;
                 case PTR:
-                    printf("    .quad %x\n", node->variable->init_value->block[i]->num_value);
+                    printf("    .quad .LC_%d\n", node->variable->init_value->block[i]->string->index);
                     break;
                 default:
                     break;

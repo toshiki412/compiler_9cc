@@ -71,6 +71,9 @@ void program() {
         if (!n) {
             continue;
         }
+        if (i>=100) {
+            error("too many global variables.");
+        }
         code[i++] = n;
     }
     code[i] = NULL;
@@ -147,6 +150,9 @@ Node *stmt() {
         // 100s‚Ü‚Å‚µ‚©‘Î‰ž‚µ‚Ä‚¢‚È‚¢
         node->block = static_cast<Node**>(calloc(100,sizeof(Node)));
         for (int i = 0; !consume("}"); i++) {
+            if (i >= 100) {
+                error("too many statements in block.");
+            }
             node->block[i] = stmt(); // {}“à‚É‚ ‚éstmt‚ð’Ç‰Á
         }
         return node;

@@ -8,6 +8,7 @@ int global_array_init[5] = {0, 1, 2, 3, 4};
 char global_char_init[5] = {5, 6, 7, 8, 11};
 char *global_message = "foo";
 char global_message_array[4] = "bar";
+char *global_message_array2[4] = {"bar", "baz", "hoge", "fuga"};
 
 struct Hoge {
   int a;
