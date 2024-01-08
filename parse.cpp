@@ -261,16 +261,16 @@ Node *stmt() {
 
         Token *t = token;
         Token *ident = consume_kind(TK_IDENT);
-        int val;
+        int value;
         Node *n = NULL;
         if (ident) {
             n = find_enum_variable(ident);
         }
         if (n) { // case x: のxがenumの場合
-            val = find_enum_variable(ident)->num_value;
+            value = find_enum_variable(ident)->num_value;
         } else { // 数字の場合
             token = t;
-            val = expect_number();
+            value = expect_number();
         }
 
         expect(":");
@@ -963,7 +963,6 @@ Node *variable(Token *tok) {
     node->offset = local_variable->offset;
     node->type = local_variable->type;
 
-    Type *node_type = node->type;
     char *node_varname = node->variable_name;
 
     while (true) {
@@ -982,6 +981,9 @@ Node *variable(Token *tok) {
                 // 型のサイズにexpr()の値をかけた数字をrhsに入れる
                 add->rhs = new_binary(ND_MUL, expr(), new_node_num(n));
             }
+
+            // nodeのtypeを取っておく
+            Type *node_type = node->type;
 
             // 新しいnodeを作って、lhsに(a + 3)のaddを入れる
             // 最終的にnodeを返すため、nodeを新しく更新している
