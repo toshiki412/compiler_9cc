@@ -163,8 +163,8 @@ Node *stmt() {
         right->kind = ND_FOR_RIGHT;
 
         if (!consume(";")) {
-            left->lhs = expr();
-            expect(";");
+            left->lhs = stmt(); // expr()だと、int a = 0;のような場合に対応できない. しかしforの中にforもできてしまう
+            // expect(";");  // stmt()の中で読んでいるので、ここでは読まない
         }
 
         if (!consume(";")) {
@@ -214,6 +214,10 @@ Node *stmt() {
     if (consume_kind(TK_RETURN)) {
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_RETURN;
+        if (consume(";")) { // return; の場合0を補完するようにしておく
+            node->lhs = new_node_num(0);
+            return node;
+        }
         node->lhs = expr();
         expect(";");
         return node;
@@ -254,7 +258,21 @@ Node *stmt() {
         if (!current_switch) {
             error("case label not within a switch statement.");
         }
-        int value = expect_number();
+
+        Token *t = token;
+        Token *ident = consume_kind(TK_IDENT);
+        int val;
+        Node *n = NULL;
+        if (ident) {
+            n = find_enum_variable(ident);
+        }
+        if (n) { // case x: のxがenumの場合
+            val = find_enum_variable(ident)->num_value;
+        } else { // 数字の場合
+            token = t;
+            val = expect_number();
+        }
+
         expect(":");
         node = static_cast<Node*>(calloc(1,sizeof(Node)));
         node->kind = ND_CASE;
@@ -890,7 +908,8 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
 
     Variable *local_variable = find_varable(def_first_half->ident);
     if (local_variable != NULL) {
-        error2("redefined variable: %s", node->variable_name);
+        // コンパイルのため。副作用あるかも。ブロックスコープを実装していないため
+        // error2("redefined variable: %s", node->variable_name);
     }
 
     // FIXME
@@ -900,22 +919,25 @@ Node *define_variable(DefineFuncOrVariable *def_first_half, Variable **variable_
         node->kind = ND_GLOBAL_VARIABLE_USE;
     }
 
+    // ローカル変数の場合は、関数ごとのindex, グローバル変数の場合は0番目のindex
+    int current_index = locals == variable_list ? current_func : 0;
+
     local_variable = static_cast<Variable*>(calloc(1,sizeof(Variable)));
-    local_variable->next = variable_list[current_func];
+    local_variable->next = variable_list[current_index];
     local_variable->name = def_first_half->ident->str;
     local_variable->len = def_first_half->ident->len;
     local_variable->init_value = init_value;
-    if (variable_list[current_func] == NULL) {
+    if (variable_list[current_index] == NULL) {
         local_variable->offset = 8;
     } else {
-        local_variable->offset = variable_list[current_func]->offset + node->byte_size;
+        local_variable->offset = variable_list[current_index]->offset + node->byte_size;
     }
     local_variable->type = type;
 
     node->offset = local_variable->offset;
     node->type = local_variable->type;
     node->variable = local_variable;
-    variable_list[current_func] = local_variable;
+    variable_list[current_index] = local_variable;
     char name[100] = {0};
     memcpy(name, def_first_half->ident->str, def_first_half->ident->len);
     // fprintf(stderr, "*NEW VARIABLE* %s\n", name);
@@ -941,6 +963,9 @@ Node *variable(Token *tok) {
     node->offset = local_variable->offset;
     node->type = local_variable->type;
 
+    Type *node_type = node->type;
+    char *node_varname = node->variable_name;
+
     while (true) {
         // a[3] は *(a + 3) と同じ  tokでaまで取れている
         if (consume("[")) {
@@ -963,6 +988,8 @@ Node *variable(Token *tok) {
             node = static_cast<Node*>(calloc(1,sizeof(Node)));
             node->kind = ND_DEREF;
             node->lhs = add;
+            node->type = node_type->ptr_to;
+            node->variable_name = node_varname;
 
             expect("]");
             continue;
